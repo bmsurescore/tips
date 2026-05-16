@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MATCHES VIP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:    #f5c842;
+      --gold2:   #e0a020;
+      --green:   #00e87a;
+      --red:     #ff3b5c;
+      --blue:    #38bdf8;
+      --bg:      #05070f;
+      --surface: rgba(255,255,255,0.03);
+      --border:  rgba(255,255,255,0.07);
+
+      /* Responsive spacing */
+      --gap-sm: 8px;
+      --gap-md: 16px;
+      --gap-lg: 24px;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --card-pad: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      text-align: center;
+      overflow-x: hidden;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+
+    /* ── Grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ══════════════════════════════════════════
+       TOP BAR
+    ══════════════════════════════════════════ */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: rgba(5,7,15,0.97);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(245,200,66,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding-top: max(14px, env(safe-area-inset-top));
+    }
+    .topbar-left h1 {
+      font-size: clamp(16px, 4vw, 22px);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      background: linear-gradient(90deg, #fff 0%, var(--gold) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .topbar-left p { font-size: clamp(8px, 1.8vw, 10px); opacity: .4; letter-spacing: 0.1em; margin-top: 2px; }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Removed .live-badge "LIVE" match status as requested */
+
+    /* ── Notification Bell ── */
+    .notif-bell {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .notif-bell:hover, .notif-bell:active { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+    .notif-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--red);
+      color: white;
+      font-size: 9px;
+      font-weight: 800;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--bg);
+      animation: notif-pop .3s ease;
+    }
+    .notif-count.hidden { display: none; }
+
+    /* ── Notification Panel ── */
+    .notif-panel {
+      position: fixed;
+      top: 68px;
+      right: 12px;
+      width: min(300px, calc(100vw - 24px));
+      background: #0d1120;
+      border: 1px solid rgba(245,200,66,0.2);
+      border-radius: var(--radius);
+      z-index: 999;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.8);
+      transform-origin: top right;
+      transform: scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .notif-panel.open { transform: scale(1); opacity: 1; pointer-events: all; }
+    .notif-panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notif-clear { font-size: 10px; color: rgba(255,255,255,.3); cursor: pointer; }
+    .notif-clear:hover { color: var(--red); }
+    .notif-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      text-align: left;
+      font-size: 12px;
+      opacity: 0.8;
+      animation: slideIn .3s ease;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-empty { padding: 20px; font-size: 12px; opacity: .4; }
+
+    /* ══════════════════════════════════════════
+       SOCIAL PROOF BAR
+    ══════════════════════════════════════════ */
+    .social-bar {
+      display: flex;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .social-item {
+      flex: 1;
+      padding: 8px 4px;
+      font-size: clamp(9px, 2vw, 11px);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.06em;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .social-item:last-child { border-right: none; }
+    .social-item span { color: var(--gold); font-weight: 700; }
+    .social-item.green span { color: var(--green); }
+    .social-item.blue  span { color: var(--blue); }
+
+    /* ══════════════════════════════════════════
+       BOTTOM NAVIGATION
+    ══════════════════════════════════════════ */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(5,7,15,0.97);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+      z-index: 200;
+    }
+    .bnav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 4px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.35);
+      font-size: clamp(8px, 2vw, 10px);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      transition: all .2s;
+      border-radius: 10px;
+      margin: 0 4px;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bnav-item .icon { font-size: clamp(18px, 4vw, 22px); transition: transform .2s; }
+    .bnav-item:active { transform: scale(0.92); }
+    .bnav-item.active { color: var(--green); }
+    .bnav-item.active .icon { transform: translateY(-3px); filter: drop-shadow(0 0 8px var(--green)); }
+    .bnav-item.vip-nav.active { color: var(--gold); }
+    .bnav-item.vip-nav.active .icon { filter: drop-shadow(0 0 8px var(--gold)); }
+    .bnav-item::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 2px;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width .2s;
+    }
+    .bnav-item.active::after { width: 24px; }
+    .bnav-item.vip-nav.active::after { background: var(--gold); }
+
+    /* ══════════════════════════════════════════
+       LAYOUT WRAPPER
+    ══════════════════════════════════════════ */
+    .page-wrap {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 12px;
+    }
+
+    /* ══════════════════════════════════════════
+       SECTION TITLES
+    ══════════════════════════════════════════ */
+    .section-title {
+      margin: 14px 0;
+      font-size: clamp(11px, 2.5vw, 14px);
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    #freeSection .section-title { color: var(--blue); }
+    #vipSection .section-title {
+      color: var(--gold);
+      text-shadow: 0 0 20px rgba(245,200,66,0.4);
+    }
+    #vipSection .section-title::before { content: '✦ '; }
+    #vipSection .section-title::after  { content: ' ✦'; }
+
+    /* ══════════════════════════════════════════
+       WIN STREAK BAR
+    ══════════════════════════════════════════ */
+    .streak-bar {
+      margin: 0 0 var(--gap-md);
+      background: rgba(0,232,122,0.06);
+      border: 1px solid rgba(0,232,122,0.15);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .streak-emoji { font-size: clamp(18px, 4vw, 24px); }
+    .streak-text { flex: 1; text-align: left; }
+    .streak-text strong { font-size: clamp(11px, 2.5vw, 14px); color: var(--green); letter-spacing: 0.06em; }
+    .streak-text small { font-size: clamp(9px, 2vw, 11px); opacity: .4; font-family: 'DM Mono', monospace; letter-spacing: 0.06em; display: block; margin-top: 2px; }
+    .streak-num { font-size: clamp(22px, 5vw, 32px); font-weight: 800; color: var(--green); font-family: 'DM Mono', monospace; text-shadow: 0 0 20px rgba(0,232,122,0.5); }
+
+    /* ══════════════════════════════════════════
+       CARD
+    ══════════════════════════════════════════ */
+    .card {
+      margin: 0 0 var(--gap-lg);
+      background: rgba(10,14,28,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: var(--card-pad);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 50px rgba(0,0,0,.5);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* VIP Card special */
+    #vipSection .card {
+      border-color: rgba(245,200,66,0.2);
+      background: rgba(8,10,20,0.92);
+      box-shadow:
+        0 0 0 1px rgba(245,200,66,0.08),
+        0 20px 60px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(245,200,66,0.1);
+    }
+    #vipSection .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    /* ══════════════════════════════════════════
+       TABLE — RESPONSIVE
+    ══════════════════════════════════════════ */
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -2px;
+      padding: 0 2px;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 320px; }
+    td, th {
+      padding: clamp(6px, 1.5vw, 12px) clamp(3px, 1vw, 8px);
+      text-align: center;
+      font-size: clamp(10px, 2vw, 13px);
+      word-break: break-word;
+    }
+    th {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(8px, 1.6vw, 11px);
+      letter-spacing: 0.1em;
+      opacity: 0.4;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td { border-bottom: 1px solid rgba(255,255,255,0.04); }
+
+    /* Column widths */
+    th:nth-child(1), td:nth-child(1) { width: 13%; }
+    th:nth-child(2), td:nth-child(2) { width: 32%; text-align: left; }
+    th:nth-child(3), td:nth-child(3) { width: 25%; }
+    th:nth-child(4), td:nth-child(4) { width: 14%; }
+    th:nth-child(5), td:nth-child(5) { width: 16%; }
+
+    tbody tr { transition: background .2s; animation: rowIn .4s ease both; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    #vipSection tbody tr:hover { background: rgba(245,200,66,0.03); }
+
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    tbody tr:nth-child(1)  { animation-delay: .05s; }
+    tbody tr:nth-child(2)  { animation-delay: .10s; }
+    tbody tr:nth-child(3)  { animation-delay: .15s; }
+    tbody tr:nth-child(4)  { animation-delay: .20s; }
+    tbody tr:nth-child(5)  { animation-delay: .25s; }
+    tbody tr:nth-child(6)  { animation-delay: .30s; }
+    tbody tr:nth-child(7)  { animation-delay: .35s; }
+    tbody tr:nth-child(8)  { animation-delay: .40s; }
+
+    /* ══════════════════════════════════════════
+       STATUS CLASSES
+    ══════════════════════════════════════════ */
+    .free     { color: var(--blue);  font-weight: 600; }
+    .vip-lock { color: var(--gold);  font-weight: 700; }
+    .win      { color: var(--green); font-weight: 700; }
+    .lost     { color: var(--red);   font-weight: 700; }
+    .pending  { color: rgba(255,255,255,0.5); font-weight: 600; }
+
+    /* ══════════════════════════════════════════
+       VIP PREMIUM BADGE
+    ══════════════════════════════════════════ */
+    .vip-premium {
+      display: inline-block;
+      background: linear-gradient(135deg, #f5c842 0%, #e0a020 50%, #f5c842 100%);
+      background-size: 200% 200%;
+      animation: shimmer 2.5s infinite linear;
+      color: #07080f;
+      font-weight: 800;
+      font-size: clamp(10px, 2vw, 12px);
+      padding: 4px 10px;
+      border-radius: 7px;
+      letter-spacing: 0.06em;
+      box-shadow: 0 2px 14px rgba(245,200,66,0.35);
+    }
+
+    /* VIP security — blurred locked content */
+    .vip-blur {
+      filter: blur(5px);
+      user-select: none;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .vip-lock-overlay {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(245,200,66,0.08);
+      border: 1px solid rgba(245,200,66,0.2);
+      color: var(--gold);
+      font-size: clamp(9px, 1.8vw, 11px);
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.06em;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ══════════════════════════════════════════
+       SUMMARY BOX
+    ══════════════════════════════════════════ */
+    .summary-box {
+      margin-top: 14px;
+      font-family: 'DM Mono', monospace;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .summary-stats { display: flex; }
+    .summary-stat {
+      flex: 1;
+      padding: clamp(8px, 2vw, 14px) 6px;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      font-size: clamp(8px, 1.5vw, 10px);
+      letter-spacing: 0.06em;
+    }
+    .summary-stat:last-child { border-right: none; }
+    .summary-stat .s-val { font-size: clamp(15px, 3.5vw, 20px); font-weight: 800; display: block; margin-bottom: 2px; }
+    .summary-stat .s-label { opacity: .4; font-size: clamp(7px, 1.4vw, 9px); }
+    .summary-stat.wins .s-val { color: var(--green); }
+    .summary-stat.lost .s-val { color: var(--red); }
+    .summary-stat.odds .s-val { color: var(--gold); }
+    .summary-stat.rate .s-val { color: var(--blue); }
+
+    .progress-wrap {
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .progress-label { display: flex; justify-content: space-between; font-size: 9px; opacity: .4; margin-bottom: 6px; letter-spacing: 0.08em; }
+    .progress-track { height: 5px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; }
+    .progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      background: linear-gradient(90deg, var(--green), #00c060);
+      transition: width 1s cubic-bezier(.34,1.56,.64,1);
+      position: relative;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: white;
+      border-radius: 3px;
+      opacity: 0.8;
+    }
+    #vipSection .summary-box   { border-color: rgba(245,200,66,0.1); }
+    #vipSection .progress-fill { background: linear-gradient(90deg, var(--gold), var(--gold2)); }
+    #vipSection .progress-fill::after { background: var(--gold); }
+
+    /* ══════════════════════════════════════════
+       SKELETON
+    ══════════════════════════════════════════ */
+    .skeleton-row {
+      display: flex;
+      gap: 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      animation: shimmer-sk 1.5s infinite;
+    }
+    .skeleton-cell { height: 12px; border-radius: 6px; background: rgba(255,255,255,0.06); }
+    .skeleton-cell:nth-child(1) { width: 13%; }
+    .skeleton-cell:nth-child(2) { width: 32%; }
+    .skeleton-cell:nth-child(3) { width: 25%; }
+    .skeleton-cell:nth-child(4) { width: 14%; }
+    .skeleton-cell:nth-child(5) { width: 16%; }
+    @keyframes shimmer-sk { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
+
+    /* ══════════════════════════════════════════
+       EMPTY STATE
+    ══════════════════════════════════════════ */
+    .empty-state { padding: 40px 24px; text-align: center; }
+    .empty-state .e-icon { font-size: 44px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state h3 { font-size: clamp(13px, 3vw, 16px); font-weight: 700; opacity: .5; letter-spacing: 0.1em; }
+    .empty-state p  { font-size: 11px; opacity: .3; margin-top: 6px; font-family: 'DM Mono', monospace; letter-spacing: 0.06em; }
+
+    /* ══════════════════════════════════════════
+       VIP AUTH BOX
+    ══════════════════════════════════════════ */
+    #authBox {
+      max-width: 400px;
+      margin: 0 auto 20px;
+      background: rgba(10,14,28,0.9);
+      border: 1px solid rgba(245,200,66,0.15);
+      border-radius: var(--radius-lg);
+      padding: clamp(20px, 5vw, 36px) clamp(16px, 5vw, 28px);
+      position: relative;
+      overflow: hidden;
+    }
+    #authBox::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #f5c842, transparent);
+    }
+    #authBox input {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border .2s;
+      margin-bottom: 12px;
+    }
+    #authBox input:focus { border-color: var(--gold); }
+    #authBox button#authBtn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #07080f;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(245,200,66,0.3);
+      transition: transform .2s, box-shadow .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #authBox button#authBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(245,200,66,0.45); }
+    #authBox button#authBtn:active { transform: scale(0.97); }
+
+    /* ══════════════════════════════════════════
+       VIP STATUS CARD (no logout button)
+    ══════════════════════════════════════════ */
+    .vip-status-active {
+      background: linear-gradient(135deg, #0a1020, #0d1830);
+      border: 1px solid rgba(245,200,66,0.25);
+      padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 24px);
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(245,200,66,0.08), 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(245,200,66,0.06) inset;
+    }
+    .vip-status-active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--gold) 50%, transparent 100%);
+    }
+    .vip-status-active::after {
+      content: '💎';
+      position: absolute;
+      top: -20px; right: -20px;
+      font-size: 100px;
+      opacity: 0.04;
+      transform: rotate(15deg);
+    }
+
+    .vip-crown { font-size: clamp(30px, 7vw, 42px); margin-bottom: 8px; display: block; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+
+    .vip-status-title {
+      font-size: clamp(16px, 4vw, 22px);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(245,200,66,0.4);
+      margin-bottom: 4px;
+    }
+    .vip-expiry {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(10px, 2vw, 12px);
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+
+    /* Auto-logout countdown */
+    .vip-countdown-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255,59,92,0.08);
+      border: 1px solid rgba(255,59,92,0.2);
+      border-radius: 10px;
+      padding: 8px 14px;
+      margin-bottom: 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(9px, 2vw, 11px);
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.06em;
+    }
+    .vip-countdown-wrap.urgent {
+      border-color: rgba(255,59,92,0.5);
+      background: rgba(255,59,92,0.12);
+      color: var(--red);
+      animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red { 0%,100%{opacity:1;} 50%{opacity:0.7;} }
+
+    .vip-days-remaining {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(245,200,66,0.08);
+      border: 1px solid rgba(245,200,66,0.18);
+      border-radius: 10px;
+      padding: 7px 16px;
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(10px, 2vw, 12px);
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+    .vip-days-num { font-size: clamp(16px, 4vw, 22px); font-weight: 800; color: var(--gold); }
+
+    .vip-tier {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 30px;
+      font-size: clamp(10px, 2vw, 12px);
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+    .vip-tier.bronze  { background: rgba(180,100,40,0.15); border: 1px solid rgba(180,100,40,0.35); color: #cd7f32; }
+    .vip-tier.silver  { background: rgba(192,192,192,0.12); border: 1px solid rgba(192,192,192,0.3); color: #C0C0C0; }
+    .vip-tier.gold    { background: rgba(245,200,66,0.12); border: 1px solid rgba(245,200,66,0.3); color: var(--gold); }
+    .vip-tier.diamond { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: var(--blue); }
+
+    .vip-stat-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+    .vip-stat {
+      background: rgba(245,200,66,0.07);
+      border: 1px solid rgba(245,200,66,0.15);
+      border-radius: 10px;
+      padding: 7px 14px;
+      font-size: clamp(9px, 1.8vw, 11px);
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════
+       VIP REQUEST CARD
+    ══════════════════════════════════════════ */
+    .vip-request-card {
+      background: linear-gradient(135deg, #0a1020, #0d1830);
+      border: 1px solid rgba(245,200,66,0.15);
+      padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 24px);
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .vip-request-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .email-badge {
+      display: inline-block;
+      background: rgba(245,200,66,0.08);
+      border: 1px solid rgba(245,200,66,0.15);
+      color: var(--gold);
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(10px, 2vw, 12px);
+      padding: 6px 14px;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      letter-spacing: 0.06em;
+      word-break: break-all;
+    }
+    .request-title { font-size: clamp(15px, 3.5vw, 20px); font-weight: 800; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .request-sub { font-size: clamp(11px, 2.2vw, 13px); opacity: 0.45; margin-bottom: 24px; letter-spacing: 0.04em; }
+    .whatsapp-btn {
+      display: block;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto 14px;
+      background: linear-gradient(135deg, #25D366, #1aad53);
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(13px, 3vw, 15px);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(37,211,102,0.3);
+      transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .whatsapp-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(37,211,102,0.45); }
+    .whatsapp-btn:active { transform: scale(0.97); }
+
+    /* ══════════════════════════════════════════
+       HISTORY
+    ══════════════════════════════════════════ */
+    .hist-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    .hist-tab {
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(11px, 2.5vw, 14px);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: all .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .date-group {
+      background: rgba(0,0,0,0.4);
+      padding: 8px 12px;
+      margin-top: 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      text-align: left;
+      color: rgba(255,255,255,0.5);
+      border-left: 3px solid var(--gold);
+    }
+
+    /* ══════════════════════════════════════════
+       TESTIMONIALS
+    ══════════════════════════════════════════ */
+    .testimonials {
+      margin: 0 0 var(--gap-lg);
+      overflow: hidden;
+    }
+    .testimonials-track { display: flex; gap: 12px; animation: scroll-left 30s linear infinite; width: max-content; }
+    .testimonials:hover .testimonials-track { animation-play-state: paused; }
+    .testi-item {
+      background: rgba(10,14,28,0.85);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+      min-width: 190px;
+      max-width: 200px;
+      text-align: left;
+    }
+    .testi-stars { color: var(--gold); font-size: 11px; margin-bottom: 6px; }
+    .testi-text  { font-size: 11px; opacity: .65; line-height: 1.5; margin-bottom: 8px; font-style: italic; }
+    .testi-name  { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--gold); }
+    @keyframes scroll-left { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+    /* ══════════════════════════════════════════
+       CELEBRATION
+    ══════════════════════════════════════════ */
+    .celebration { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confetti-fall 2.5s ease-in forwards;
+    }
+    @keyframes confetti-fall {
+      0%   { opacity:1;  transform: translateY(-20px) rotate(0deg); }
+      100% { opacity:0;  transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* ══════════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════════ */
+    #toast {
+      position: fixed;
+      top: max(20px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #00e87a, #00c062);
+      color: #05070f;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,232,122,0.3);
+      z-index: 9999;
+      font-weight: 700;
+      font-size: clamp(11px, 3vw, 14px);
+      letter-spacing: 0.04em;
+      animation: slideDown .5s ease;
+      white-space: nowrap;
+      max-width: 90vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ══════════════════════════════════════════
+       POPUP
+    ══════════════════════════════════════════ */
+    .popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9000;
+      padding: 20px;
+    }
+    .popup-box {
+      background: #0d1120;
+      border: 1px solid rgba(245,200,66,0.2);
+      color: white;
+      padding: clamp(20px, 5vw, 32px) clamp(16px, 5vw, 28px);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      animation: fadeIn .3s ease;
+      box-shadow: 0 20px 60px rgba(0,0,0,.8), 0 0 0 1px rgba(245,200,66,0.05);
+    }
+    .popup-box p { font-size: clamp(12px, 3vw, 15px); line-height: 1.6; opacity: 0.85; margin-bottom: 20px; }
+    .popup-box button {
+      padding: 11px 28px;
+      border: none;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #05070f;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+    }
+
+    /* ══════════════════════════════════════════
+       PULL TO REFRESH
+    ══════════════════════════════════════════ */
+    .ptr-indicator {
+      text-align: center;
+      padding: 0;
+      height: 0;
+      overflow: hidden;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      opacity: 0;
+      transition: height .2s, opacity .2s, padding .2s;
+    }
+    .ptr-indicator.active { height: 40px; opacity: 1; padding: 12px 0; }
+
+    /* ══════════════════════════════════════════
+       MISC DETAILS
+    ══════════════════════════════════════════ */
+    td small {
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(8px, 1.5vw, 10px);
+      letter-spacing: 0.06em;
+      opacity: 0.55;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .footer {
+      padding: 20px 20px 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: clamp(8px, 1.5vw, 10px);
+      letter-spacing: 0.1em;
+      opacity: .2;
+    }
+
+    /* ══════════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════════ */
+    @keyframes slideDown { from{top:-80px;opacity:0;} to{top:20px;opacity:1;} }
+    @keyframes fadeIn    { from{opacity:0;transform:scale(.95);} to{opacity:1;transform:scale(1);} }
+    @keyframes slideIn   { from{opacity:0;transform:translateX(20px);} to{opacity:1;transform:translateX(0);} }
+    @keyframes notif-pop { 0%{transform:scale(0);} 70%{transform:scale(1.2);} 100%{transform:scale(1);} }
+    @keyframes pulse-badge { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.06);opacity:0.9;} }
+
+    /* ══════════════════════════════════════════
+       UTILITIES
+    ══════════════════════════════════════════ */
+    .hidden { display: none !important; }
+    ::-webkit-scrollbar       { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 20px; }
+    ::-webkit-scrollbar-track { background: #080b18; }
+
+    /* ══════════════════════════════════════════
+       TABLET (600px+)
+    ══════════════════════════════════════════ */
+    @media (min-width: 600px) {
+      :root { --card-pad: 20px; --radius: 18px; --radius-lg: 28px; }
+      .topbar { padding: 16px 24px; }
+      .social-item { padding: 10px 10px; font-size: 11px; gap: 6px; }
+      .bnav-item { font-size: 10px; }
+      td, th { font-size: 13px; padding: 10px 8px; }
+      th { font-size: 10px; }
+    }
+
+    /* ══════════════════════════════════════════
+       DESKTOP (900px+)
+    ══════════════════════════════════════════ */
+    @media (min-width: 900px) {
+      :root { --card-pad: 28px; }
+      body { padding-bottom: 0; }
+      .bottom-nav { display: none; }
+
+      /* Top horizontal nav on desktop */
+      .topbar { padding: 16px 32px; }
+      .desktop-nav {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .desktop-nav-btn {
+        padding: 9px 20px;
+        border-radius: 10px;
+        font-family: 'Syne', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.6);
+        transition: all .2s;
+      }
+      .desktop-nav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+      .desktop-nav-btn.active-free { border-color: rgba(56,189,248,0.4); background: rgba(56,189,248,0.08); color: var(--blue); }
+      .desktop-nav-btn.active-vip  { border-color: rgba(245,200,66,0.4); background: rgba(245,200,66,0.08); color: var(--gold); }
+      .desktop-nav-btn.active-hist { border-color: rgba(0,232,122,0.4); background: rgba(0,232,122,0.08); color: var(--green); }
+
+      td, th { font-size: 14px; padding: 12px 10px; }
+      th { font-size: 11px; letter-spacing: 0.12em; }
+      .vip-premium { font-size: 13px; padding: 5px 12px; }
+
+      /* Two-column grid for today's tips on desktop */
+      .sections-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .sections-grid .page-wrap {
+        padding: 0;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .page-wrap { padding: 0 24px; }
+    }
+    @media (min-width: 1200px) {
+      .page-wrap { padding: 0 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>MATCHES VIP</h1>
+    <p>PROFESSIONAL FOOTBALL PREDICTIONS</p>
+  </div>
+  <div class="topbar-right">
+    <!-- Desktop nav (hidden on mobile via CSS) -->
+    <div class="desktop-nav" id="desktopNav" style="display:none;">
+      <button class="desktop-nav-btn active-free" id="dnavFree" onclick="showSection('free')">🆓 FREE</button>
+      <button class="desktop-nav-btn" id="dnavVip" onclick="showSection('vip')">💎 VIP</button>
+      <button class="desktop-nav-btn" id="dnavHistory" onclick="showSection('history')">📊 HISTORY</button>
+    </div>
+    <div class="notif-bell" onclick="toggleNotifPanel()" id="notifBell">
+      🔔
+      <div class="notif-count hidden" id="notifCount">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    🔔 NOTIFICATIONS
+    <span class="notif-clear" onclick="clearNotifications()">CLEAR ALL</span>
+  </div>
+  <div id="notifList">
+    <div class="notif-empty">No notifications yet</div>
+  </div>
+</div>
+
+<!-- SOCIAL PROOF BAR -->
+<div class="social-bar">
+  <div class="social-item">👥 <span id="memberCount">1,247</span> online</div>
+  <div class="social-item green">🔥 Streak <span id="globalStreak">7</span>W</div>
+  <div class="social-item blue">📅 <span id="todayTitle"></span></div>
+</div>
+
+<!-- Pull to refresh -->
+<div class="ptr-indicator" id="ptrIndicator">↑ Release to refresh</div>
+
+<h2 id="title" style="font-size:clamp(11px,2.5vw,13px);opacity:.4;letter-spacing:.12em;font-family:'DM Mono',monospace;margin:12px 0 0;"></h2>
+
+<!-- POPUP -->
+<div id="popup" class="popup">
+  <div class="popup-box">
+    <div style="font-size:28px;margin-bottom:12px;">💬</div>
+    <p id="popupMsg"></p>
+    <button onclick="closePopup()">OK</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     FREE SECTION
+═══════════════════════════════════ -->
+<div id="freeSection">
+  <div class="page-wrap">
+    <div class="section-title">🆓 FREE TIPS</div>
+
+    <div class="streak-bar" id="freeStreakBar" style="display:none;">
+      <div class="streak-emoji">🔥</div>
+      <div class="streak-text">
+        <strong>TODAY'S WIN STREAK</strong>
+        <small id="freeStreakSub">Consecutive wins today</small>
+      </div>
+      <div class="streak-num" id="freeStreakNum">0</div>
+    </div>
+
+    <div class="card">
+      <div id="freeSkeletonRows">
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+      </div>
+      <div class="table-scroll">
+        <table id="freeTable" style="display:none;">
+          <thead><tr><th>TIME</th><th>MATCH</th><th>TIP</th><th>ODD</th><th>FT</th></tr></thead>
+          <tbody id="freeData"></tbody>
+        </table>
+      </div>
+      <div id="emptyFree" class="empty-state hidden">
+        <div class="e-icon">⚽</div>
+        <h3>NO MATCHES TODAY</h3>
+        <p>Check back later for today's free tips</p>
+      </div>
+      <div id="summaryFree" class="summary-box" style="display:none;">
+        <div class="summary-stats">
+          <div class="summary-stat wins"><span class="s-val" id="sWinF">0</span><span class="s-label">WINS</span></div>
+          <div class="summary-stat lost"><span class="s-val" id="sLostF">0</span><span class="s-label">LOST</span></div>
+          <div class="summary-stat rate"><span class="s-val" id="sRateF">0%</span><span class="s-label">WIN RATE</span></div>
+          <div class="summary-stat odds"><span class="s-val" id="sOddsF">0.00</span><span class="s-label">TOTAL ODDS</span></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>WIN RATE TRACKER</span><span id="sProgLabelF">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill" id="sProgBarF" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testimonials" id="testimonialsWrap">
+      <div class="testimonials-track" id="testimonialsTrack"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     VIP SECTION
+═══════════════════════════════════ -->
+<div id="vipSection" class="hidden">
+  <div class="page-wrap">
+    <!-- Auth box -->
+    <div id="vipBox">
+      <div id="authBox" style="display:none;">
+        <div style="font-size:40px;margin-bottom:12px;">👑</div>
+        <div id="authTitle" style="font-size:20px;font-weight:800;letter-spacing:.1em;color:#f5c842;margin-bottom:6px;">LOGIN</div>
+        <p style="font-size:12px;opacity:.4;letter-spacing:.06em;margin-bottom:22px;">Access premium predictions</p>
+        <input id="email"    type="email"    placeholder="Email address" autocomplete="off">
+        <input id="password" type="password" placeholder="Password"      autocomplete="off">
+        <button id="authBtn" onclick="loginUser()">LOGIN</button>
+        <br><br>
+        <small id="switchAuth" onclick="toggleAuth()" style="cursor:pointer;color:var(--blue);font-size:12px;letter-spacing:.04em;">Create account</small>&nbsp;&nbsp;
+        <small onclick="resetPassword()" style="cursor:pointer;color:rgba(255,255,255,.35);font-size:12px;">Forgot password?</small>
+      </div>
+    </div>
+
+    <div class="section-title">VIP TIPS</div>
+
+    <div class="streak-bar" id="vipStreakBar" style="display:none;border-color:rgba(245,200,66,0.2);background:rgba(245,200,66,0.05);">
+      <div class="streak-emoji">🏆</div>
+      <div class="streak-text">
+        <strong style="color:var(--gold);">VIP WIN STREAK</strong>
+        <small id="vipStreakSub">Consecutive wins today</small>
+      </div>
+      <div class="streak-num" id="vipStreakNum" style="color:var(--gold);text-shadow:0 0 20px rgba(245,200,66,0.5);">0</div>
+    </div>
+
+    <div class="card">
+      <div id="vipSkeletonRows">
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+        <div class="skeleton-row"><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div><div class="skeleton-cell"></div></div>
+      </div>
+      <div class="table-scroll">
+        <table id="vipTable" style="display:none;">
+          <thead><tr><th>TIME</th><th>MATCH</th><th>TIP</th><th>ODD</th><th>FT</th></tr></thead>
+          <tbody id="vipData"></tbody>
+        </table>
+      </div>
+      <div id="emptyVip" class="empty-state hidden">
+        <div class="e-icon">💎</div>
+        <h3>NO VIP TIPS TODAY</h3>
+        <p>Premium tips will appear here soon</p>
+      </div>
+      <div id="summaryVip" class="summary-box" style="display:none;">
+        <div class="summary-stats">
+          <div class="summary-stat wins"><span class="s-val" id="sWinV">0</span><span class="s-label">WINS</span></div>
+          <div class="summary-stat lost"><span class="s-val" id="sLostV">0</span><span class="s-label">LOST</span></div>
+          <div class="summary-stat rate"><span class="s-val" id="sRateV">0%</span><span class="s-label">WIN RATE</span></div>
+          <div class="summary-stat odds"><span class="s-val" id="sOddsV">0.00</span><span class="s-label">TOTAL ODDS</span></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>WIN RATE TRACKER</span><span id="sProgLabelV">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill" id="sProgBarV" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     HISTORY SECTION
+═══════════════════════════════════ -->
+<div id="historySection" class="hidden">
+  <div class="page-wrap">
+    <div class="hist-tabs">
+      <button id="histFreeBtn" class="hist-tab" onclick="showHistoryType('free')"
+        style="border:1px solid rgba(56,189,248,0.4);background:rgba(56,189,248,0.08);color:var(--blue);">
+        📊 FREE HISTORY
+      </button>
+      <button id="histVipBtn" class="hist-tab" onclick="showHistoryType('vip')"
+        style="border:1px solid var(--border);background:var(--surface);color:rgba(255,255,255,.65);">
+        💎 VIP HISTORY
+      </button>
+    </div>
+    <div id="historyFreeWrap">
+      <div class="section-title" style="color:var(--blue);">FREE HISTORY</div>
+      <div class="card" id="historyFree"></div>
+    </div>
+    <div id="historyVipWrap" class="hidden">
+      <div class="section-title">VIP HISTORY</div>
+      <div class="card" id="historyVip" style="border-color:rgba(245,200,66,0.2);"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAVIGATION (mobile/tablet only) -->
+<nav class="bottom-nav">
+  <div class="bnav-item active" id="bnavFree" onclick="showSection('free')">
+    <div class="icon">🆓</div>
+    <div>FREE</div>
+  </div>
+  <div class="bnav-item vip-nav" id="bnavVip" onclick="showSection('vip')">
+    <div class="icon">💎</div>
+    <div>VIP</div>
+  </div>
+  <div class="bnav-item" id="bnavHistory" onclick="showSection('history')">
+    <div class="icon">📊</div>
+    <div>HISTORY</div>
+  </div>
+</nav>
+
+<footer class="footer">© 2026 MATCHES VIP • PREMIUM FOOTBALL PREDICTIONS</footer>
+
+<!-- ═══════════════════════════════════
+     FIREBASE + APP LOGIC
+═══════════════════════════════════ -->
+<script type="module">
+import { initializeApp }                                    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getFirestore, collection, query, where,
+         onSnapshot, doc, getDoc, setDoc }                  from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword,
+         createUserWithEmailAndPassword, sendEmailVerification,
+         sendPasswordResetEmail, signOut,
+         onAuthStateChanged }                               from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
+  authDomain:        "vip-app-b82d3.firebaseapp.com",
+  projectId:         "vip-app-b82d3",
+  storageBucket:     "vip-app-b82d3.firebasestorage.app",
+  messagingSenderId: "412845975498",
+  appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
+};
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+
+let currentUser     = null;
+let vipUnlocked     = false;
+let isLogin         = true;
+let vipExpiryDate   = null;   // Date object for expiry — used for auto-logout
+let autoLogoutTimer = null;   // timer reference
+let notifiedMatches = JSON.parse(localStorage.getItem("notifiedMatches")) || {};
+let notifications   = JSON.parse(localStorage.getItem("vipNotifications")) || [];
+
+const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+audio.volume = 1;
+document.body.addEventListener("click", () => {
+  audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+}, { once: true });
+
+// ── Date ──────────────────────────────────────────────────────
+const today = new Date();
+const date  = [
+  String(today.getDate()).padStart(2,"0"),
+  String(today.getMonth()+1).padStart(2,"0"),
+  today.getFullYear()
+].join(".");
+
+if (localStorage.getItem("lastDate") !== date) {
+  localStorage.removeItem("notifiedMatches");
+  notifiedMatches = {};
+  localStorage.setItem("lastDate", date);
+}
+
+document.getElementById("title").innerText = `TODAY — ${date}`;
+document.getElementById("todayTitle").innerText = date;
+if ("Notification" in window) Notification.requestPermission();
+
+// ── Desktop nav visibility ────────────────────────────────────
+function handleDesktopNav() {
+  const desktopNav = document.getElementById("desktopNav");
+  if (window.innerWidth >= 900) {
+    desktopNav.style.display = "flex";
+  } else {
+    desktopNav.style.display = "none";
+  }
+}
+handleDesktopNav();
+window.addEventListener("resize", handleDesktopNav);
+
+// ── Testimonials ──────────────────────────────────────────────
+const TESTIMONIALS = [
+  { stars: 5, text: "Nilifuata VIP tips leo asubuhi — 4/4 WIN! 🔥", name: "Juma K." },
+  { stars: 5, text: "Odds ya 12.50 ilipata! Asante sana MATCHES VIP", name: "Amani T." },
+  { stars: 5, text: "Best prediction site Tanzania. Kila siku wins.", name: "Grace M." },
+  { stars: 5, text: "Nilikuwa skeptical lakini siku ya kwanza 3 wins!", name: "Hassan B." },
+  { stars: 5, text: "VIP inanisaidia kila wiki. Super accurate 💎", name: "Fatuma S." },
+  { stars: 4, text: "Free tips pia ni nzuri sana. VIP ni level nyingine!", name: "Peter N." },
+];
+function buildTestimonials() {
+  const track = document.getElementById("testimonialsTrack");
+  const doubled = [...TESTIMONIALS, ...TESTIMONIALS];
+  track.innerHTML = doubled.map(t => `
+    <div class="testi-item">
+      <div class="testi-stars">${'★'.repeat(t.stars)}${'☆'.repeat(5-t.stars)}</div>
+      <div class="testi-text">"${t.text}"</div>
+      <div class="testi-name">— ${t.name}</div>
+    </div>
+  `).join("");
+}
+buildTestimonials();
+
+// ── Member count ──────────────────────────────────────────────
+function animateMemberCount() {
+  const el = document.getElementById("memberCount");
+  let base = 1200 + Math.floor(Math.random() * 100);
+  el.innerText = base.toLocaleString();
+  setInterval(() => {
+    base += Math.floor(Math.random() * 7) - 3;
+    if (base < 1000) base = 1000;
+    el.innerText = base.toLocaleString();
+  }, 4000);
+}
+animateMemberCount();
+
+// ── Notifications ─────────────────────────────────────────────
+function renderNotifications() {
+  const list    = document.getElementById("notifList");
+  const countEl = document.getElementById("notifCount");
+  if (notifications.length === 0) {
+    list.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+    countEl.classList.add("hidden");
+    return;
+  }
+  list.innerHTML = notifications.slice(0, 8).map(n => `
+    <div class="notif-item">${n.icon || "🔔"} ${n.msg}<br>
+    <span style="font-size:9px;opacity:.3;font-family:'DM Mono',monospace;">${n.time}</span></div>
+  `).join("");
+  countEl.innerText = Math.min(notifications.length, 9);
+  countEl.classList.remove("hidden");
+}
+function addNotification(msg, icon = "🔔") {
+  const time = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  notifications.unshift({ msg, icon, time });
+  if (notifications.length > 20) notifications.pop();
+  localStorage.setItem("vipNotifications", JSON.stringify(notifications));
+  renderNotifications();
+}
+window.toggleNotifPanel = function() {
+  document.getElementById("notifPanel").classList.toggle("open");
+};
+window.clearNotifications = function() {
+  notifications = [];
+  localStorage.setItem("vipNotifications", JSON.stringify(notifications));
+  renderNotifications();
+};
+document.addEventListener("click", e => {
+  if (!e.target.closest(".notif-panel") && !e.target.closest(".notif-bell")) {
+    document.getElementById("notifPanel").classList.remove("open");
+  }
+});
+renderNotifications();
+
+// ── Helpers ───────────────────────────────────────────────────
+function showToast(message) {
+  document.getElementById("toast")?.remove();
+  const toast = Object.assign(document.createElement("div"), { id:"toast", innerText: message });
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+window.closePopup = () => { document.getElementById("popup").style.display = "none"; };
+window.showPopup  = function(msg) {
+  document.getElementById("popupMsg").innerText = msg;
+  document.getElementById("popup").style.display = "flex";
+  audio.play().catch(() => {});
+  navigator.vibrate?.([200, 100, 200]);
+  if (Notification.permission === "granted" && "serviceWorker" in navigator) {
+    navigator.serviceWorker.ready.then(reg =>
+      reg.showNotification("MATCHES VIP", {
+        body: msg,
+        icon: "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+        vibrate: [200, 100, 200]
+      })
+    );
+  }
+};
+
+// ── Celebration ───────────────────────────────────────────────
+function showCelebration() {
+  const el = document.createElement("div");
+  el.className = "celebration";
+  const colors = ["#f5c842","#00e87a","#38bdf8","#ff3b5c","#fff"];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.cssText = `left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()}s;animation-duration:${1.5+Math.random()*1.5}s;transform:scale(${0.5+Math.random()});`;
+    el.appendChild(piece);
+  }
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Section navigation ────────────────────────────────────────
+window.showSection = function(type) {
+  ["freeSection","vipSection","historySection"].forEach(id =>
+    document.getElementById(id).classList.add("hidden")
+  );
+  ["bnavFree","bnavVip","bnavHistory"].forEach(id =>
+    document.getElementById(id).classList.remove("active")
+  );
+  ["dnavFree","dnavVip","dnavHistory"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = "desktop-nav-btn";
+  });
+
+  if (type === "free") {
+    document.getElementById("freeSection").classList.remove("hidden");
+    document.getElementById("bnavFree").classList.add("active");
+    const d = document.getElementById("dnavFree");
+    if (d) d.classList.add("active-free");
+  } else if (type === "vip") {
+    document.getElementById("vipSection").classList.remove("hidden");
+    document.getElementById("bnavVip").classList.add("active");
+    const d = document.getElementById("dnavVip");
+    if (d) d.classList.add("active-vip");
+    // Show auth if not logged in
+    const authBox = document.getElementById("authBox");
+    if (!currentUser) authBox.style.display = "block";
+  } else {
+    document.getElementById("historySection").classList.remove("hidden");
+    document.getElementById("bnavHistory").classList.add("active");
+    const d = document.getElementById("dnavHistory");
+    if (d) d.classList.add("active-hist");
+  }
+  navigator.vibrate?.([10]);
+};
+
+window.showHistoryType = function(type) {
+  document.getElementById("historyFreeWrap").classList.toggle("hidden", type !== "free");
+  document.getElementById("historyVipWrap").classList.toggle("hidden",  type !== "vip");
+  const fBtn = document.getElementById("histFreeBtn");
+  const vBtn = document.getElementById("histVipBtn");
+  fBtn.style.borderColor = type==="free" ? "rgba(56,189,248,0.4)" : "var(--border)";
+  fBtn.style.background  = type==="free" ? "rgba(56,189,248,0.08)" : "var(--surface)";
+  fBtn.style.color       = type==="free" ? "var(--blue)" : "rgba(255,255,255,.65)";
+  vBtn.style.borderColor = type==="vip"  ? "rgba(245,200,66,0.4)" : "var(--border)";
+  vBtn.style.background  = type==="vip"  ? "rgba(245,200,66,0.08)" : "var(--surface)";
+  vBtn.style.color       = type==="vip"  ? "var(--gold)" : "rgba(255,255,255,.65)";
+};
+
+// ══════════════════════════════════════════
+// AUTO-LOGOUT: fires exactly at expiry time
+// ══════════════════════════════════════════
+function scheduleAutoLogout(expiryDate) {
+  // Clear any previous timer
+  if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+
+  const msLeft = expiryDate - new Date();
+  if (msLeft <= 0) {
+    // Already expired — logout immediately
+    performExpiryLogout();
+    return;
+  }
+
+  // Cap at 2^31 - 1 ms (setTimeout limit ~24.8 days)
+  const maxTimeout = 2147483647;
+  if (msLeft > maxTimeout) {
+    // Schedule a check again in 24 days
+    autoLogoutTimer = setTimeout(() => scheduleAutoLogout(expiryDate), maxTimeout);
+  } else {
+    autoLogoutTimer = setTimeout(performExpiryLogout, msLeft);
+  }
+}
+
+async function performExpiryLogout() {
+  if (currentUser) {
+    const userRef = doc(db, "users", currentUser.uid);
+    await setDoc(userRef, { vip: false }, { merge: true }).catch(() => {});
+  }
+  localStorage.removeItem("vipWasUnlocked");
+  await signOut(auth).catch(() => {});
+  showPopup("⏰ VIP expired. Subscription ended.");
+  addNotification("VIP subscription has expired.", "⏰");
+}
+
+// Countdown display in VIP card (updates every minute)
+let countdownInterval = null;
+function startCountdownDisplay() {
+  updateCountdownDisplay();
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(updateCountdownDisplay, 60000);
+}
+
+function updateCountdownDisplay() {
+  if (!vipExpiryDate) return;
+  const el = document.getElementById("vipCountdown");
+  if (!el) return;
+  const msLeft = vipExpiryDate - new Date();
+  if (msLeft <= 0) { el.innerText = "Expired"; return; }
+  const totalHours = Math.floor(msLeft / 3600000);
+  const days       = Math.floor(totalHours / 24);
+  const hours      = totalHours % 24;
+  const mins       = Math.floor((msLeft % 3600000) / 60000);
+
+  if (days > 0) {
+    el.innerText = `${days}d ${hours}h remaining`;
+  } else {
+    el.innerText = `${hours}h ${mins}m remaining`;
+    // Urgent styling when < 24h
+    const wrap = document.getElementById("vipCountdownWrap");
+    if (wrap) wrap.classList.add("urgent");
+  }
+}
+
+// ── Auth state ────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  currentUser = user || null;
+  vipUnlocked = false;
+  vipExpiryDate = null;
+  if (autoLogoutTimer) clearTimeout(autoLogoutTimer);
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  document.getElementById("vipRequestCard")?.remove();
+
+  if (user) {
+    document.getElementById("authBox").style.display = "none";
+    checkUserVIP();
+  } else {
+    document.getElementById("authBox").style.display = "block";
+  }
+});
+
+function getVipTier(daysRemaining) {
+  if (daysRemaining >= 90) return { cls: "diamond", icon: "💎", label: "DIAMOND" };
+  if (daysRemaining >= 30) return { cls: "gold",    icon: "🥇", label: "GOLD" };
+  if (daysRemaining >= 7)  return { cls: "silver",  icon: "🥈", label: "SILVER" };
+  return { cls: "bronze", icon: "🥉", label: "BRONZE" };
+}
+
+function buildVipCard(html) {
+  document.getElementById("vipRequestCard")?.remove();
+  const card = document.createElement("div");
+  card.id = "vipRequestCard";
+  card.style.cssText = "max-width:420px;margin:0 auto 20px;";
+  card.innerHTML = html;
+  document.getElementById("vipBox").appendChild(card);
+}
+
+function checkUserVIP() {
+  if (!currentUser) return;
+  const userRef = doc(db, "users", currentUser.uid);
+  onSnapshot(userRef, async snap => {
+    vipUnlocked = false;
+    vipExpiryDate = null;
+    if (autoLogoutTimer)  clearTimeout(autoLogoutTimer);
+    if (countdownInterval) clearInterval(countdownInterval);
+
+    document.getElementById("vipRequestCard")?.remove();
+    if (!snap.exists()) { renderRequestCard(); return; }
+    const data = snap.data();
+
+    if (data.vip === true && data.expiry) {
+      const now      = new Date();
+      const exp      = new Date(data.expiry + "T23:59:59");
+      const msLeft   = exp - now;
+      const daysLeft = Math.ceil(msLeft / 86400000);
+
+      if (now <= exp) {
+        vipUnlocked   = true;
+        vipExpiryDate = exp;
+        const tier     = getVipTier(daysLeft);
+        const hoursLeft = Math.floor((msLeft % 86400000) / 3600000);
+
+        // Schedule auto-logout exactly when expiry hits
+        scheduleAutoLogout(exp);
+
+        // Celebration on first unlock
+        if (!localStorage.getItem("vipWasUnlocked")) {
+          localStorage.setItem("vipWasUnlocked", "1");
+          setTimeout(() => { showCelebration(); showToast("🎉 VIP tips unlocked!"); }, 500);
+          addNotification("VIP access activated! Enjoy premium predictions.", "💎");
+        }
+
+        // Build card WITHOUT logout button — auto-logout handles it
+        buildVipCard(`
+          <div class="vip-status-active">
+            <span class="vip-crown">👑</span>
+            <div class="vip-status-title">VIP ACTIVE</div>
+            <div class="vip-expiry">EXPIRES: ${data.expiry}</div>
+            <div class="vip-tier ${tier.cls}">${tier.icon} ${tier.label} MEMBER</div>
+            <div class="vip-days-remaining">
+              <span class="vip-days-num">${daysLeft}</span>
+              day${daysLeft !== 1 ? 's' : ''} &nbsp;·&nbsp; ${hoursLeft}h left
+            </div>
+            <div class="vip-countdown-wrap${daysLeft <= 1 ? ' urgent' : ''}" id="vipCountdownWrap">
+              ⏱ <span id="vipCountdown">calculating...</span>
+            </div>
+            <div class="vip-stat-row">
+              <div class="vip-stat">✅ PREMIUM ACCESS</div>
+              <div class="vip-stat">🔓 UNLOCKED</div>
+            </div>
+          </div>
+        `);
+
+        // Start live countdown display
+        startCountdownDisplay();
+
+      } else {
+        // Expired at load time
+        localStorage.removeItem("vipWasUnlocked");
+        await setDoc(userRef, { vip: false }, { merge: true });
+        await signOut(auth);
+        showPopup("VIP expired ❌");
+      }
+    } else {
+      localStorage.removeItem("vipWasUnlocked");
+      renderRequestCard();
+    }
+  });
+}
+
+function renderRequestCard() {
+  buildVipCard(`
+    <div class="vip-request-card">
+      <div style="font-size:36px;margin-bottom:12px;">💎</div>
+      <div class="request-title">UNLOCK VIP ACCESS</div>
+      <div class="request-sub">Get premium predictions every day</div>
+      <div class="email-badge">📧 ${currentUser.email}</div><br>
+      <button class="whatsapp-btn" onclick="goWhatsApp()">💬 REQUEST VIP ON WHATSAPP</button>
+    </div>
+  `);
+}
+
+window.goWhatsApp = function() {
+  if (!currentUser) { showPopup("Login first"); return; }
+  const msg = `Hello 👋\n\nI want VIP access 💎\n\nUID:\n${currentUser.uid}\n\nEmail:\n${currentUser.email}`;
+  window.open(`https://wa.me/255743507691?text=${encodeURIComponent(msg)}`, "_blank");
+};
+
+// ── Auth actions ──────────────────────────────────────────────
+window.loginUser = async function() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if (!cred.user.emailVerified) {
+      await signOut(auth);
+      showPopup("Verify your email first 📩");
+      return;
+    }
+    document.getElementById("authBox").style.display = "none";
+    showPopup("Login successful ✅");
+  } catch (e) {
+    const msgs = {
+      "auth/user-not-found":     "Account not found",
+      "auth/wrong-password":     "Wrong password",
+      "auth/invalid-credential": "Wrong email or password"
+    };
+    showPopup(msgs[e.code] || "Login failed");
+  }
+};
+
+window.signupUser = async function() {
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  if (password.length < 6) { showPopup("Password must be at least 6 characters"); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(cred.user);
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email,
+      uid: cred.user.uid,
+      vip: false,
+      expiry: "",
+      createdAt: new Date().toISOString()
+    });
+    showPopup("Account created ✅ Verify email first.");
+    await signOut(auth);
+  } catch (e) {
+    const msgs = {
+      "auth/email-already-in-use": "Email already registered 📩",
+      "auth/invalid-email":        "Invalid email ❌",
+      "auth/weak-password":        "Weak password 🔑"
+    };
+    showPopup(msgs[e.code] || "Something went wrong");
+  }
+};
+
+window.toggleAuth = function() {
+  isLogin = !isLogin;
+  document.getElementById("authTitle").innerText  = isLogin ? "LOGIN"          : "SIGN UP";
+  document.getElementById("authBtn").innerText    = isLogin ? "LOGIN"          : "CREATE ACCOUNT";
+  document.getElementById("switchAuth").innerText = isLogin ? "Create account" : "Already have account?";
+  document.getElementById("authBtn").onclick      = isLogin ? loginUser        : signupUser;
+};
+
+window.resetPassword = async function() {
+  const email = document.getElementById("email").value.trim();
+  if (!email) { showPopup("Enter email first 📩"); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showPopup("Password reset email sent ✅");
+  } catch (e) {
+    showPopup(e.code || e.message || "Reset failed ❌");
+  }
+};
+
+// ── Match logic ───────────────────────────────────────────────
+function getStatus(m) {
+  if (!m.ft || m.ft === "???" || !m.ft.includes("-")) return "pending";
+  const [home, away] = m.ft.split("-").map(Number);
+  if (isNaN(home) || isNaN(away)) return "pending";
+  const tip = m.tip.toUpperCase();
+  const tipType = m.tipType || "goals";
+  const total = home + away;
+  if (home > away && tip === "HOME")  return "win";
+  if (away > home && tip === "AWAY")  return "win";
+  if (home === away && tip === "DRAW") return "win";
+  if (tip === "1X" && home >= away)   return "win";
+  if (tip === "X2" && away >= home)   return "win";
+  if (tip === "12" && home !== away)  return "win";
+  if (tip === "DNB HOME") return home > away ? "win" : home === away ? "pending" : "lost";
+  if (tip === "DNB AWAY") return away > home ? "win" : home === away ? "pending" : "lost";
+  if (tip.includes("BTTS") || tip.includes("BOTH")) {
+    const both = home > 0 && away > 0;
+    if (tip.includes("YES")) return both  ? "win" : "lost";
+    if (tip.includes("NO"))  return !both ? "win" : "lost";
+  }
+  if (tip.includes("HOME OVER"))  return home > parseFloat(tip.split(" ")[2])  ? "win" : "lost";
+  if (tip.includes("AWAY OVER"))  return away > parseFloat(tip.split(" ")[2])  ? "win" : "lost";
+  if (tip.includes("HOME UNDER")) return home < parseFloat(tip.split(" ")[2])  ? "win" : "lost";
+  if (tip.includes("AWAY UNDER")) return away < parseFloat(tip.split(" ")[2])  ? "win" : "lost";
+  if (tipType === "corners") {
+    const corners = Number(m.corners) || 0;
+    const parts   = tip.split(" ");
+    const line    = parseFloat(parts[parts.length - 1]);
+    if (isNaN(line)) return "pending";
+    if (tip.includes("OVER"))  return corners > line ? "win" : "lost";
+    if (tip.includes("UNDER")) return corners < line ? "win" : "lost";
+    return "pending";
+  }
+  if (tip.includes("OVER"))  return total > parseFloat(tip.split(" ")[1]) ? "win" : "lost";
+  if (tip.includes("UNDER")) return total < parseFloat(tip.split(" ")[1]) ? "win" : "lost";
+  if (tip.includes("-"))     return tip === m.ft ? "win" : "lost";
+  if (tip === "HOME CLEAN SHEET") return away === 0 ? "win" : "lost";
+  if (tip === "AWAY CLEAN SHEET") return home === 0 ? "win" : "lost";
+  if (tip.includes("AH")) {
+    const line = parseFloat(tip.split(" ")[1]);
+    const diff = home - away;
+    if (diff > line)   return "win";
+    if (diff === line) return "pending";
+    return "lost";
+  }
+  return "lost";
+}
+
+function getCountdownLabel(matchTime) {
+  const diff = matchTime - new Date();
+  if (diff > 0) {
+    const hrs  = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    return `⏳ ${hrs}h ${mins}m`;
+  }
+  // Removed LIVE status — just show time
+  return "FT";
+}
+
+function getRowStyle(matchTime) {
+  const diff = matchTime - new Date();
+  if (diff > 0) return "border-left:3px solid #00e87a;";
+  return "opacity:0.6;";
+}
+
+function buildMatchTime(dateStr, timeStr) {
+  const [d, mo, y] = dateStr.split(".");
+  return new Date(`${y}-${mo}-${d}T${timeStr || "00:00"}`);
+}
+
+function buildRow(m, matchTime, isFree) {
+  const status  = getStatus(m);
+  const countdown = getCountdownLabel(matchTime);
+  const oddVal  = parseFloat(m.odd) || 1;
+  // VIP security: only unlock if user has valid VIP
+  const locked  = !isFree && !vipUnlocked;
+
+  const matchName = locked ? "🔒 VIP GAME" : m.match;
+  const tipClass  = isFree ? "free" : (locked ? "vip-lock" : "vip-lock");
+
+  let tipHTML;
+  if (isFree) {
+    tipHTML = m.tip;
+  } else if (locked) {
+    // Security: double-blur and no hint of content
+    tipHTML = `<span class="vip-lock-overlay">🔒 VIP ONLY</span>`;
+  } else {
+    tipHTML = `<span class="vip-premium">${m.tip}</span>${m.tipType === "corners" && m.corners ? `<br><small style="color:rgba(255,255,255,.4);">🚩 ${m.corners}</small>` : ""}`;
+  }
+
+  const ft        = locked ? "—" : m.ft;
+  const timeLabel = locked ? "🔒" : (status !== "pending" ? "" : countdown);
+
+  return { html: `
+    <tr style="${getRowStyle(matchTime)}">
+      <td style="font-family:'DM Mono',monospace;font-size:11px;opacity:.7;">${m.time || "--:--"}</td>
+      <td style="font-weight:600;text-align:left;">${matchName}</td>
+      <td class="${tipClass}">${tipHTML}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;">${locked ? "—" : m.odd}</td>
+      <td class="${status}">${ft}<small>${timeLabel}</small></td>
+    </tr>
+  `, status, oddVal };
+}
+
+const todayQuery = query(collection(db, "matches"), where("date", "==", date));
+
+onSnapshot(todayQuery, snapshot => {
+  const rows = [];
+  snapshot.forEach(docSnap => {
+    const m         = docSnap.data();
+    const matchTime = buildMatchTime(m.date, m.time);
+    const diff      = matchTime - new Date();
+    if (diff > 0 && diff <= 600000) {
+      const isVipOnly = (m.type || "vip") !== "free";
+      if (!isVipOnly || vipUnlocked) {
+        const key = m.match + m.time;
+        if (!notifiedMatches[key]) {
+          notifiedMatches[key] = true;
+          localStorage.setItem("notifiedMatches", JSON.stringify(notifiedMatches));
+          showPopup(`⏰ Starting soon:\n${m.match}`);
+          addNotification(`${m.match} starts in ~10 minutes`, "⏰");
+        }
+      }
+    }
+    rows.push({ m, matchTime });
+  });
+
+  rows.sort((a, b) => a.matchTime - b.matchTime);
+
+  let freeHTML = "", vipHTML = "";
+  let stats = { winF:0, lostF:0, pendingF:0, oddsF:1, winV:0, lostV:0, pendingV:0, oddsV:1 };
+  let freeStreakCount = 0, vipStreakCount = 0;
+  let prevFreeWin = true, prevVipWin = true;
+
+  rows.forEach(({ m, matchTime }) => {
+    const isFree = (m.type || "vip") === "free";
+    const { html, status, oddVal } = buildRow(m, matchTime, isFree);
+
+    // Notifications for results (VIP only when unlocked)
+    if (!isFree && vipUnlocked) {
+      const key = "result_" + m.match + m.time;
+      if (status !== "pending" && !notifiedMatches[key]) {
+        notifiedMatches[key] = true;
+        localStorage.setItem("notifiedMatches", JSON.stringify(notifiedMatches));
+        if (status === "win")  addNotification(`WIN ✅ ${m.match}`, "✅");
+        if (status === "lost") addNotification(`LOST ❌ ${m.match}`, "❌");
+      }
+    }
+
+    if (isFree) {
+      freeHTML += html;
+      if (status === "win")       { stats.winF++; stats.oddsF *= oddVal; if(prevFreeWin) freeStreakCount++; prevFreeWin=true; }
+      else if (status === "lost") { stats.lostF++; prevFreeWin=false; freeStreakCount=0; }
+      else                        { stats.pendingF++; stats.oddsF *= oddVal; }
+    } else {
+      vipHTML += html;
+      if (status === "win")       { stats.winV++; stats.oddsV *= oddVal; if(prevVipWin) vipStreakCount++; prevVipWin=true; }
+      else if (status === "lost") { stats.lostV++; prevVipWin=false; vipStreakCount=0; }
+      else                        { stats.pendingV++; stats.oddsV *= oddVal; }
+    }
+  });
+
+  const fTotal = stats.winF + stats.lostF + stats.pendingF;
+  const vTotal = stats.winV + stats.lostV + stats.pendingV;
+
+  document.getElementById("freeSkeletonRows").style.display = "none";
+  document.getElementById("vipSkeletonRows").style.display  = "none";
+
+  if (fTotal > 0) {
+    document.getElementById("freeTable").style.display = "";
+    document.getElementById("emptyFree").classList.add("hidden");
+    document.getElementById("summaryFree").style.display = "";
+  } else {
+    document.getElementById("freeTable").style.display = "none";
+    document.getElementById("emptyFree").classList.remove("hidden");
+    document.getElementById("summaryFree").style.display = "none";
+  }
+  if (vTotal > 0) {
+    document.getElementById("vipTable").style.display = "";
+    document.getElementById("emptyVip").classList.add("hidden");
+    document.getElementById("summaryVip").style.display = "";
+  } else {
+    document.getElementById("vipTable").style.display = "none";
+    document.getElementById("emptyVip").classList.remove("hidden");
+    document.getElementById("summaryVip").style.display = "none";
+  }
+
+  document.getElementById("freeData").innerHTML = freeHTML;
+  document.getElementById("vipData").innerHTML  = vipHTML;
+
+  const fDone = stats.winF + stats.lostF;
+  const vDone = stats.winV + stats.lostV;
+  const fRate = fDone > 0 ? Math.round((stats.winF / fDone) * 100) : 0;
+  const vRate = vDone > 0 ? Math.round((stats.winV / vDone) * 100) : 0;
+
+  document.getElementById("sWinF").innerText  = stats.winF;
+  document.getElementById("sLostF").innerText = stats.lostF;
+  document.getElementById("sRateF").innerText = fRate + "%";
+  document.getElementById("sOddsF").innerText = (fTotal > 0 ? stats.oddsF : 0).toFixed(2);
+  document.getElementById("sProgLabelF").innerText = `${stats.winF} / ${fDone}`;
+  setTimeout(() => { document.getElementById("sProgBarF").style.width = fRate + "%"; }, 300);
+
+  document.getElementById("sWinV").innerText  = stats.winV;
+  document.getElementById("sLostV").innerText = stats.lostV;
+  document.getElementById("sRateV").innerText = vRate + "%";
+  document.getElementById("sOddsV").innerText = (vTotal > 0 ? stats.oddsV : 0).toFixed(2);
+  document.getElementById("sProgLabelV").innerText = `${stats.winV} / ${vDone}`;
+  setTimeout(() => { document.getElementById("sProgBarV").style.width = vRate + "%"; }, 300);
+
+  document.getElementById("globalStreak").innerText = Math.max(freeStreakCount, vipStreakCount);
+
+  if (freeStreakCount > 0) {
+    document.getElementById("freeStreakBar").style.display = "flex";
+    document.getElementById("freeStreakNum").innerText = freeStreakCount;
+    document.getElementById("freeStreakSub").innerText = `${freeStreakCount} consecutive win${freeStreakCount>1?'s':''} today 🔥`;
+  }
+  if (vipStreakCount > 0) {
+    document.getElementById("vipStreakBar").style.display = "flex";
+    document.getElementById("vipStreakNum").innerText = vipStreakCount;
+    document.getElementById("vipStreakSub").innerText = `${vipStreakCount} consecutive win${vipStreakCount>1?'s':''} today 🏆`;
+  }
+});
+
+// ── History ────────────────────────────────────────────────────
+onSnapshot(collection(db, "matches"), snapshot => {
+  const freeGroups = {}, vipGroups = {};
+  const past = [];
+  snapshot.forEach(docSnap => {
+    const m = docSnap.data();
+    if (m.date === date) return;
+    past.push(m);
+  });
+  past.sort((a, b) => {
+    const toISO = d => d.split(".").reverse().join("-");
+    return new Date(toISO(b.date)) - new Date(toISO(a.date));
+  });
+  past.forEach(m => {
+    const type = m.type || "vip";
+    const grp  = type === "free" ? freeGroups : vipGroups;
+    if (!grp[m.date]) grp[m.date] = [];
+    grp[m.date].push(m);
+  });
+  function buildHistoryHTML(groups, tipClass) {
+    const keys = Object.keys(groups);
+    if (keys.length === 0) return '<div class="empty-state"><div class="e-icon">📋</div><h3>NO HISTORY YET</h3><p>Past results will appear here</p></div>';
+    return keys.map(d => {
+      const rows = groups[d].map(m => `
+        <tr>
+          <td style="font-family:'DM Mono',monospace;font-size:10px;opacity:.6;">${m.time || "--:--"}</td>
+          <td style="text-align:left;">${m.match}</td>
+          <td class="${tipClass}">${m.tip}${m.tipType === "corners" && m.corners ? `<br><small>🚩 ${m.corners}</small>` : ""}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:11px;">${m.odd}</td>
+          <td class="${getStatus(m)}">${m.ft}</td>
+        </tr>
+      `).join("");
+      return `
+        <div class="date-group">📅 ${d}</div>
+        <div class="table-scroll">
+          <table>
+            <tr><th>TIME</th><th>MATCH</th><th>TIP</th><th>ODD</th><th>FT</th></tr>
+            ${rows}
+          </table>
+        </div>
+      `;
+    }).join("");
+  }
+  document.getElementById("historyFree").innerHTML = buildHistoryHTML(freeGroups, "free");
+  document.getElementById("historyVip").innerHTML  = buildHistoryHTML(vipGroups,  "vip-lock");
+});
+
+// ── Countdown refresh ──────────────────────────────────────────
+setInterval(() => {
+  document.querySelectorAll("#freeSection tbody tr, #vipSection tbody tr").forEach(row => {
+    const timeText   = row.children[0].innerText;
+    if (timeText === "--:--") return;
+    const matchTime  = buildMatchTime(date, timeText);
+    const statusCell = row.children[4];
+    const ft         = statusCell.firstChild?.textContent?.trim() || "";
+    const status     = getStatus({ ft, tip: row.children[2]?.innerText || "" });
+    if (status === "pending") {
+      statusCell.innerHTML = `${ft}<small>${getCountdownLabel(matchTime)}</small>`;
+    }
+  });
+}, 30000);
+
+// ── Pull to refresh ────────────────────────────────────────────
+let touchStartY = 0;
+let touching    = false;
+const ptrEl     = document.getElementById("ptrIndicator");
+
+document.addEventListener("touchstart", e => {
+  touchStartY = e.touches[0].clientY;
+  touching    = true;
+}, { passive: true });
+
+document.addEventListener("touchmove", e => {
+  if (!touching) return;
+  const delta = e.touches[0].clientY - touchStartY;
+  if (window.scrollY === 0 && delta > 60) {
+    ptrEl.classList.add("active");
+    ptrEl.innerText = "↓ Release to refresh";
+  }
+}, { passive: true });
+
+document.addEventListener("touchend", () => {
+  if (ptrEl.classList.contains("active")) {
+    ptrEl.innerText = "⟳ Refreshing...";
+    navigator.vibrate?.([50]);
+    setTimeout(() => { ptrEl.classList.remove("active"); window.location.reload(); }, 800);
+  }
+  touching = false;
+});
+</script>
+</body>
+</html>
