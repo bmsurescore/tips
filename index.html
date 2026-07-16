@@ -1175,52 +1175,148 @@ window.goWhatsApp = function() {
   window.open(`https://wa.me/255743507691?text=${encodeURIComponent(msg)}`, "_blank");
 };
 
-function getStatus(m) {
-  if (!m.ft || m.ft === "???" || !m.ft.includes("-")) return "pending";
-  const [home, away] = m.ft.split("-").map(Number);
-  if (isNaN(home) || isNaN(away)) return "pending";
-  const tip = m.tip.toUpperCase();
-  const tipType = m.tipType || "goals";
+// ══════════════════════════════════════════
+// BETTING MARKET RESOLUTION
+// ══════════════════════════════════════════
+function getHalves(m) {
+  // returns { h1:{home,away}, h2:{home,away} } if computable, else null pieces
+  let h1 = null, h2 = null;
+  if (m.ht && m.ht.includes("-")) {
+    const [hh, ha] = m.ht.split("-").map(Number);
+    if (!isNaN(hh) && !isNaN(ha)) h1 = { home: hh, away: ha };
+  }
+  if (h1 && m.ft && m.ft.includes("-")) {
+    const [fh, fa] = m.ft.split("-").map(Number);
+    if (!isNaN(fh) && !isNaN(fa) && fh >= h1.home && fa >= h1.away) {
+      h2 = { home: fh - h1.home, away: fa - h1.away };
+    }
+  }
+  return { h1, h2 };
+}
+
+// Evaluates ONE condition (no combos) against a given home/away pair.
+function evalAtomic(tip, home, away) {
   const total = home + away;
-  if (home > away && tip === "HOME")  return "win";
-  if (away > home && tip === "AWAY")  return "win";
-  if (home === away && tip === "DRAW") return "win";
-  if (tip === "1X" && home >= away)   return "win";
-  if (tip === "X2" && away >= home)   return "win";
-  if (tip === "12" && home !== away)  return "win";
+
+  if (tip === "HOME" || tip === "1") return home > away ? "win" : "lost";
+  if (tip === "AWAY" || tip === "2") return away > home ? "win" : "lost";
+  if (tip === "DRAW" || tip === "X") return home === away ? "win" : "lost";
+  if (tip === "1X") return home >= away ? "win" : "lost";
+  if (tip === "X2") return away >= home ? "win" : "lost";
+  if (tip === "12") return home !== away ? "win" : "lost";
   if (tip === "DNB HOME") return home > away ? "win" : home === away ? "pending" : "lost";
   if (tip === "DNB AWAY") return away > home ? "win" : home === away ? "pending" : "lost";
   if (tip.includes("BTTS") || tip.includes("BOTH")) {
     const both = home > 0 && away > 0;
-    if (tip.includes("YES")) return both  ? "win" : "lost";
+    if (tip.includes("YES")) return both ? "win" : "lost";
     if (tip.includes("NO"))  return !both ? "win" : "lost";
   }
-  if (tip.includes("HOME OVER"))  return home > parseFloat(tip.split(" ")[2])  ? "win" : "lost";
-  if (tip.includes("AWAY OVER"))  return away > parseFloat(tip.split(" ")[2])  ? "win" : "lost";
-  if (tip.includes("HOME UNDER")) return home < parseFloat(tip.split(" ")[2])  ? "win" : "lost";
-  if (tip.includes("AWAY UNDER")) return away < parseFloat(tip.split(" ")[2])  ? "win" : "lost";
-  if (tipType === "corners") {
+  if (tip.includes("HOME OVER"))  return home > parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+  if (tip.includes("AWAY OVER"))  return away > parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+  if (tip.includes("HOME UNDER")) return home < parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+  if (tip.includes("AWAY UNDER")) return away < parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+
+  // Goals Range (total, or one team's own goals): "GOALS 1-4", "HOME GOALS 1-2", "AWAY GOALS 2-3"
+  if (tip.includes("GOALS") && /\d+\s*-\s*\d+/.test(tip)) {
+    const rangeMatch = tip.match(/(\d+)\s*-\s*(\d+)/);
+    const lo = Number(rangeMatch[1]);
+    const hi = Number(rangeMatch[2]);
+    if (isNaN(lo) || isNaN(hi)) return "pending";
+    if (tip.includes("HOME")) return (home >= lo && home <= hi) ? "win" : "lost";
+    if (tip.includes("AWAY")) return (away >= lo && away <= hi) ? "win" : "lost";
+    return (total >= lo && total <= hi) ? "win" : "lost";
+  }
+
+  if (tip.includes("OVER"))  return total > parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+  if (tip.includes("UNDER")) return total < parseFloat(tip.split(" ").pop()) ? "win" : "lost";
+  if (tip === "ODD")  return total % 2 === 1 ? "win" : "lost";
+  if (tip === "EVEN") return total % 2 === 0 ? "win" : "lost";
+  if (tip === "HOME CLEAN SHEET") return away === 0 ? "win" : "lost";
+  if (tip === "AWAY CLEAN SHEET") return home === 0 ? "win" : "lost";
+  if (tip === "HOME WIN TO NIL") return (home > away && away === 0) ? "win" : "lost";
+  if (tip === "AWAY WIN TO NIL") return (away > home && home === 0) ? "win" : "lost";
+  if (tip.includes("AH")) {
+    const line = parseFloat(tip.split(" ").pop());
+    if (isNaN(line)) return "pending";
+    const diff = tip.includes("AWAY") ? (away - home) : (home - away);
+    const adj = diff + line;
+    return adj > 0 ? "win" : adj === 0 ? "pending" : "lost";
+  }
+  if (/^\d+-\d+$/.test(tip)) return tip === `${home}-${away}` ? "win" : "lost";
+  return null; // unrecognized
+}
+
+function combineStatuses(list) {
+  if (list.some(s => s === "lost")) return "lost";
+  if (list.some(s => s === "pending" || s === null)) return "pending";
+  return "win";
+}
+
+function getStatus(m) {
+  if (!m.ft || m.ft === "???" || !m.ft.includes("-")) return "pending";
+  const [home, away] = m.ft.split("-").map(Number);
+  if (isNaN(home) || isNaN(away)) return "pending";
+  const tip = m.tip.toUpperCase().trim();
+  const { h1, h2 } = getHalves(m);
+  const ftCode = home > away ? "1" : home < away ? "2" : "X";
+
+  // ── Half-Time/Full-Time, e.g. "1/1", "X/2" ──
+  if (m.tipType === "htft" || /(^|:)\s*(1|X|2)\s*\/\s*(1|X|2)\s*$/.test(tip)) {
+    if (!h1) return "pending";
+    const htCode = h1.home > h1.away ? "1" : h1.home < h1.away ? "2" : "X";
+    const match = tip.match(/(1|X|2)\s*\/\s*(1|X|2)\s*$/);
+    return match ? ((htCode === match[1] && ftCode === match[2]) ? "win" : "lost") : "pending";
+  }
+
+  // ── Team to Qualify (aggregate/pens — set m.qualified manually: "HOME"/"AWAY") ──
+  if (tip.includes("QUALIFY")) {
+    if (!m.qualified) return "pending";
+    const wantHome = tip.includes("HOME");
+    return (m.qualified.toUpperCase() === (wantHome ? "HOME" : "AWAY")) ? "win" : "lost";
+  }
+
+  // ── Win Either Half ──
+  if (tip.includes("WIN EITHER HALF")) {
+    if (!h1 || !h2) return "pending";
+    const isHome = tip.includes("HOME");
+    const wonH1 = isHome ? h1.home > h1.away : h1.away > h1.home;
+    const wonH2 = isHome ? h2.home > h2.away : h2.away > h2.home;
+    return (wonH1 || wonH2) ? "win" : "lost";
+  }
+
+  // ── Corners ──
+  if (m.tipType === "corners") {
     const corners = Number(m.corners) || 0;
-    const parts   = tip.split(" ");
-    const line    = parseFloat(parts[parts.length - 1]);
+    const parts = tip.split(" ");
+    const line = parseFloat(parts[parts.length - 1]);
     if (isNaN(line)) return "pending";
     if (tip.includes("OVER"))  return corners > line ? "win" : "lost";
     if (tip.includes("UNDER")) return corners < line ? "win" : "lost";
     return "pending";
   }
-  if (tip.includes("OVER"))  return total > parseFloat(tip.split(" ")[1]) ? "win" : "lost";
-  if (tip.includes("UNDER")) return total < parseFloat(tip.split(" ")[1]) ? "win" : "lost";
-  if (tip.includes("-"))     return tip === m.ft ? "win" : "lost";
-  if (tip === "HOME CLEAN SHEET") return away === 0 ? "win" : "lost";
-  if (tip === "AWAY CLEAN SHEET") return home === 0 ? "win" : "lost";
-  if (tip.includes("AH")) {
-    const line = parseFloat(tip.split(" ")[1]);
-    const diff = home - away;
-    if (diff > line)   return "win";
-    if (diff === line) return "pending";
-    return "lost";
+
+  // ── First-half scope: tip prefixed "HT " or "1H " ──
+  if (tip.startsWith("HT ") || tip.startsWith("1H ")) {
+    if (!h1) return "pending";
+    const inner = tip.replace(/^(HT|1H)\s+/, "");
+    return evalAtomic(inner, h1.home, h1.away) ?? "lost";
   }
-  return "lost";
+
+  // ── Combo bets, e.g. "1X & OVER 2.5", "DC X2 & BTTS YES", "HT 1X & HT OVER 0.5" ──
+  if (tip.includes(" & ")) {
+    const legs = tip.split(" & ").map(s => s.trim());
+    const results = legs.map(leg => {
+      if (leg.startsWith("HT ") || leg.startsWith("1H ")) {
+        if (!h1) return "pending";
+        return evalAtomic(leg.replace(/^(HT|1H)\s+/, ""), h1.home, h1.away) ?? "lost";
+      }
+      return evalAtomic(leg.replace(/^DC\s+/, ""), home, away) ?? "lost";
+    });
+    return combineStatuses(results);
+  }
+
+  // ── Everything else (single full-time markets) ──
+  return evalAtomic(tip, home, away) ?? "lost";
 }
 
 function getCountdownLabel(matchTime) {
@@ -1261,6 +1357,14 @@ function buildStatusBadge(status, locked, countdown) {
   return `<span class="badge pending match-countdown">${countdown}</span>`;
 }
 
+function buildTipNote(m) {
+  if (m.tipType === "corners" && m.corners) return `<span class="corners-note">🚩 corners: ${escapeHtml(m.corners)}</span>`;
+  if (m.ht && (m.tipType === "htft" || /HT|1H|\//.test((m.tip||"").toUpperCase()))) {
+    return `<span class="corners-note">⏱ HT: ${escapeHtml(m.ht)}</span>`;
+  }
+  return "";
+}
+
 function buildRow(m, matchTime, isFree) {
   const status    = getStatus(m);
   const countdown = getCountdownLabel(matchTime);
@@ -1274,9 +1378,7 @@ function buildRow(m, matchTime, isFree) {
     tipHTML = `<span class="tip-label vip-premium">${escapeHtml(m.tip)}</span>`;
     oddHTML = `<span class="odd-badge blur-locked">${escapeHtml(m.odd)}</span>`;
   } else {
-    tipHTML = `<span class="tip-label ${tipClass}">${escapeHtml(m.tip)}</span>${
-      m.tipType === "corners" && m.corners ? `<span class="corners-note">🚩 corners: ${escapeHtml(m.corners)}</span>` : ""
-    }`;
+    tipHTML = `<span class="tip-label ${tipClass}">${escapeHtml(m.tip)}</span>${buildTipNote(m)}`;
     oddHTML = `<span class="odd-badge">${escapeHtml(m.odd)}</span>`;
   }
 
@@ -1576,7 +1678,7 @@ function processHistory() {
         <div class="match-tip-bar">
           <div>
             <span class="tip-label ${tipClass}">${escapeHtml(m.tip)}</span>
-            ${m.tipType === "corners" && m.corners ? `<span class="corners-note">🚩 corners: ${escapeHtml(m.corners)}</span>` : ""}
+            ${buildTipNote(m)}
           </div>
           <span class="odd-badge">${escapeHtml(m.odd)}</span>
         </div>
@@ -1636,3 +1738,4 @@ initApp();
 </script>
 </body>
 </html>
+
