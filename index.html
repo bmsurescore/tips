@@ -259,6 +259,50 @@ body{
 #vipSection .league-header.status-lost .league-time{
   background:rgba(42,7,8,.2);box-shadow:inset 0 0 0 1px rgba(42,7,8,.16), 0 2px 6px rgba(0,0,0,.12);
 }
+
+/* ── VIP: league name hidden, only a centered premium time badge ── */
+#vipSection .league-header.vip-time-only,
+#historySection .league-header.vip-time-only,
+.league-header.vip-time-only{
+  justify-content:center;
+  background:linear-gradient(120deg, #171207, #2a2210 45%, #171207);
+  border:1px solid rgba(224,178,74,.35);
+  box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px rgba(224,178,74,.08);
+  position:relative;overflow:hidden;
+}
+.league-header.vip-time-only::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.league-header.vip-time-only::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg, rgba(224,178,74,.05) 0 2px, transparent 2px 14px);
+  pointer-events:none;
+}
+.vip-time-only .vtb{
+  display:inline-flex;align-items:center;gap:9px;
+  font-family:'JetBrains Mono',monospace;font-weight:800;
+  font-size:clamp(11.5px,2.6vw,14px);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);padding:4px 4px;position:relative;z-index:1;
+}
+.vip-time-only .vtb-crown{font-size:14px;filter:drop-shadow(0 0 6px rgba(224,178,74,.5));}
+.vip-time-only .vtb-time{
+  background:rgba(224,178,74,.14);border:1px solid rgba(224,178,74,.35);
+  padding:5px 14px;border-radius:20px;color:var(--gold);
+  box-shadow:inset 0 0 0 1px rgba(224,178,74,.08);
+}
+#vipSection .league-header.vip-time-only.status-lost,
+#historySection .league-header.vip-time-only.status-lost,
+.league-header.vip-time-only.status-lost{
+  background:linear-gradient(120deg, #2a0708, #3a1213 45%, #2a0708);
+  border-color:rgba(235,91,95,.35);
+}
+.league-header.vip-time-only.status-lost .vtb,
+.league-header.vip-time-only.status-lost .vtb-time{color:var(--coral);}
+.league-header.vip-time-only.status-lost .vtb-time{
+  background:rgba(235,91,95,.14);border-color:rgba(235,91,95,.35);
+}
+
 .league-group{
   margin-bottom:18px;
   background:var(--surface-2);
@@ -848,25 +892,69 @@ body{
 <footer class="footer">© 2026 BM SURESCORE · PREMIUM FOOTBALL PREDICTIONS</footer>
 
 <script type="module">
-import { initializeApp }                                    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-import { getFirestore, collection, query, where, limit,
-         onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
-         serverTimestamp, increment }                         from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged }     from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+// ══════════════════════════════════════════
+// RESILIENT FIREBASE LOADING
+// If the network / CDN is unreachable (e.g. previewing inside an
+// offline editor), a normal top-level `import` throws and the WHOLE
+// module silently fails — no function ever gets defined, which is
+// why buttons like the theme toggle looked "frozen" with a console
+// error like "toggleTheme is not defined". Loading Firebase
+// dynamically inside a try/catch means the rest of the app (theme,
+// tabs, notifications panel) still works even with no internet.
+// ══════════════════════════════════════════
+let initializeApp, getFirestore, collection, query, where, limit,
+    onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
+    serverTimestamp, increment, getAuth, signInAnonymously, onAuthStateChanged;
 
-const firebaseConfig = {
-  apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
-  authDomain:        "vip-app-b82d3.firebaseapp.com",
-  projectId:         "vip-app-b82d3",
-  storageBucket:     "vip-app-b82d3.firebasestorage.app",
-  messagingSenderId: "412845975498",
-  appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
-};
-const app  = initializeApp(firebaseConfig);
-const db   = getFirestore(app);
-const auth = getAuth(app);
+let app = null, db = null, auth = null;
+let firebaseReady = false;
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+async function loadFirebase() {
+  try {
+    const [appMod, fsMod, authMod] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js"),
+      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js")
+    ]);
+
+    ({ initializeApp } = appMod);
+    ({ getFirestore, collection, query, where, limit, onSnapshot, doc,
+       getDoc, getDocs, setDoc, updateDoc, serverTimestamp, increment } = fsMod);
+    ({ getAuth, signInAnonymously, onAuthStateChanged } = authMod);
+
+    const firebaseConfig = {
+      apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
+      authDomain:        "vip-app-b82d3.firebaseapp.com",
+      projectId:         "vip-app-b82d3",
+      storageBucket:     "vip-app-b82d3.firebasestorage.app",
+      messagingSenderId: "412845975498",
+      appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
+    };
+    app  = initializeApp(firebaseConfig);
+    db   = getFirestore(app);
+    auth = getAuth(app);
+    firebaseReady = true;
+  } catch (e) {
+    console.warn("Firebase could not be loaded (offline or CDN blocked). Running in limited offline mode:", e);
+    firebaseReady = false;
+  }
+}
+
+function showOfflineNotice() {
+  ["freeSkeletonRows","vipSkeletonRows"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+  ["emptyFree","emptyVip"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.querySelector("h3").innerText = "No connection";
+    el.querySelector("p").innerText = "Couldn't reach the server — check your internet connection";
+  });
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
 
 // ══════════════════════════════════════════
 // ANTI-COPY / LONG-PRESS GUARD
@@ -1799,6 +1887,14 @@ function buildLeagueHeader(league, timeLabel, status) {
     </div>`;
 }
 
+function buildVipHeader(timeLabel, status) {
+  const cls = status === "lost" ? " status-lost" : "";
+  return `
+    <div class="league-header vip-time-only${cls}">
+      <span class="vtb"><span class="vtb-crown">👑</span>VIP MATCH<span class="vtb-time">🕐 ${escapeHtml(timeLabel)}</span></span>
+    </div>`;
+}
+
 function buildStatusBadge(status, locked, countdown) {
   if (locked)               return `<span class="badge locked">🔒 VIP</span>`;
   if (status === "win")     return `<span class="badge win">✅ WON</span>`;
@@ -1895,11 +1991,18 @@ function updateTicker(rows, globalStreak) {
   track.innerHTML = parts.join("&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;").repeat(2);
 }
 
-function renderGroupedByLeague(builtRows) {
+function renderGroupedByLeague(builtRows, isVip) {
   if (builtRows.length === 0) return "";
   return builtRows.map(row => {
-    const league    = buildLeagueLabel(row.m) || "OTHER MATCHES";
     const timeLabel = row.m.time || "--:--";
+    if (isVip) {
+      return `
+        <div class="league-group">
+          ${buildVipHeader(timeLabel, row.status)}
+          <div class="match-list">${row.styledHtml}</div>
+        </div>`;
+    }
+    const league = buildLeagueLabel(row.m) || "OTHER MATCHES";
     return `
       <div class="league-group">
         ${buildLeagueHeader(league, timeLabel, row.status)}
@@ -1993,8 +2096,8 @@ function processTodayMatches() {
     document.getElementById("summaryVip").style.display = "none";
   }
 
-  document.getElementById("freeData").innerHTML = renderGroupedByLeague(freeBuilt);
-  document.getElementById("vipData").innerHTML  = renderGroupedByLeague(vipBuilt);
+  document.getElementById("freeData").innerHTML = renderGroupedByLeague(freeBuilt, false);
+  document.getElementById("vipData").innerHTML  = renderGroupedByLeague(vipBuilt, true);
 
   const fDone = stats.winF + stats.lostF;
   const vDone = stats.winV + stats.lostV;
@@ -2130,11 +2233,13 @@ function renderHistoryPage(type) {
   const matches = groups[d];
 
   const leaguesHTML = matches.map(m => {
-    const league = buildLeagueLabel(m) || "OTHER MATCHES";
     const status = getStatus(m);
+    const headerHTML = isFree
+      ? buildLeagueHeader(buildLeagueLabel(m) || "OTHER MATCHES", m.time || "--:--", status)
+      : buildVipHeader(m.time || "--:--", status);
     return `
     <div class="league-group">
-      ${buildLeagueHeader(league, m.time || "--:--", status)}
+      ${headerHTML}
       <div class="match-list">${buildHistoryCard(m, isFree)}</div>
     </div>`;
   }).join("");
@@ -2163,70 +2268,4 @@ function processHistory() {
 
   const freeGroups = {}, vipGroups = {};
 
-  latestFreeAll.forEach(docSnap => {
-    const m = docSnap.data();
-    if (m.date === date) return;
-    if (!isPastDate(m.date)) return;
-    if (!freeGroups[m.date]) freeGroups[m.date] = [];
-    freeGroups[m.date].push(m);
-  });
-
-  latestVipAll.forEach(docSnap => {
-    const m = docSnap.data();
-    if (m.date === date) return;
-    if (!isPastDate(m.date)) return;
-    if (!vipGroups[m.date]) vipGroups[m.date] = [];
-    vipGroups[m.date].push(m);
-  });
-
-  freeHistGroups = freeGroups;
-  vipHistGroups  = vipGroups;
-  freeHistDates  = sortDatesDesc(freeGroups);
-  vipHistDates   = sortDatesDesc(vipGroups);
-
-  renderHistoryPage("free");
-  renderHistoryPage("vip");
-}
-
-function startHistoryListeners() {
-  onSnapshot(collection(db, "matches_free"), snapshot => {
-    latestFreeAll = snapshot.docs;
-    processHistory();
-  });
-  onSnapshot(collection(db, "matches_vip"), snapshot => {
-    latestVipAll = snapshot.docs;
-    processHistory();
-  });
-}
-
-function startCountdownRefresh() {
-  setInterval(() => {
-    document.querySelectorAll('.match-card[data-status="pending"]').forEach(card => {
-      const mtime = Number(card.dataset.mtime);
-      if (!mtime) return;
-      const badge = card.querySelector(".match-countdown");
-      if (badge) badge.innerText = getCountdownLabel(new Date(mtime));
-    });
-  }, 30000);
-}
-
-async function initApp() {
-  await ensureAnonAuth();
-  startBlockedWatcher();
-  startDeviceResetWatcher();
-  await syncServerTime();
-  computeDateFromNow();
-  startDateRolloverWatcher();
-  startFreeMatchesListener();
-  startVipMatchesListener();
-  startHistoryListeners();
-  startCountdownRefresh();
-  initVipCode();
-  trackVisit();
-  startVisitorHeartbeat();
-  showIdentityModalIfNeeded();
-}
-initApp();
-</script>
-</body>
-</html>
+  latestFre
