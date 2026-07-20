@@ -260,47 +260,34 @@ body{
   background:rgba(42,7,8,.2);box-shadow:inset 0 0 0 1px rgba(42,7,8,.16), 0 2px 6px rgba(0,0,0,.12);
 }
 
-/* ── VIP: league name hidden, only a centered premium time badge ── */
-#vipSection .league-header.vip-time-only,
-#historySection .league-header.vip-time-only,
+/* ── VIP: league name hidden, only a centered premium time badge ──
+   Same gold gradient + dark ink text as the standard VIP league header
+   (this is the high-contrast "pro" look), just centered with no league name. */
 .league-header.vip-time-only{
   justify-content:center;
-  background:linear-gradient(120deg, #171207, #2a2210 45%, #171207);
-  border:1px solid rgba(224,178,74,.35);
-  box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 0 0 1px rgba(224,178,74,.08);
-  position:relative;overflow:hidden;
-}
-.league-header.vip-time-only::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg, transparent, var(--gold), transparent);
-}
-.league-header.vip-time-only::after{
-  content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(115deg, rgba(224,178,74,.05) 0 2px, transparent 2px 14px);
-  pointer-events:none;
+  background:linear-gradient(120deg, var(--gold), #f0c869);
+  box-shadow:0 6px 16px rgba(224,178,74,.3);
 }
 .vip-time-only .vtb{
   display:inline-flex;align-items:center;gap:9px;
-  font-family:'JetBrains Mono',monospace;font-weight:800;
-  font-size:clamp(11.5px,2.6vw,14px);letter-spacing:.14em;text-transform:uppercase;
-  color:var(--gold);padding:4px 4px;position:relative;z-index:1;
+  font-family:'Space Grotesk',sans-serif;font-weight:800;
+  font-size:clamp(12px,2.8vw,14px);letter-spacing:.06em;text-transform:uppercase;
+  color:#171207;
 }
-.vip-time-only .vtb-crown{font-size:14px;filter:drop-shadow(0 0 6px rgba(224,178,74,.5));}
+.vip-time-only .vtb-crown{font-size:15px;}
 .vip-time-only .vtb-time{
-  background:rgba(224,178,74,.14);border:1px solid rgba(224,178,74,.35);
-  padding:5px 14px;border-radius:20px;color:var(--gold);
-  box-shadow:inset 0 0 0 1px rgba(224,178,74,.08);
+  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:clamp(11px,2.4vw,13.5px);
+  background:rgba(23,18,7,.2);color:#171207;padding:5px 13px;border-radius:20px;
+  letter-spacing:.04em;box-shadow:inset 0 0 0 1px rgba(23,18,7,.16), 0 2px 6px rgba(0,0,0,.12);
 }
-#vipSection .league-header.vip-time-only.status-lost,
-#historySection .league-header.vip-time-only.status-lost,
 .league-header.vip-time-only.status-lost{
-  background:linear-gradient(120deg, #2a0708, #3a1213 45%, #2a0708);
-  border-color:rgba(235,91,95,.35);
+  background:linear-gradient(120deg, var(--coral), #ff8a8d);
+  box-shadow:0 6px 16px rgba(235,91,95,.3);
 }
 .league-header.vip-time-only.status-lost .vtb,
-.league-header.vip-time-only.status-lost .vtb-time{color:var(--coral);}
+.league-header.vip-time-only.status-lost .vtb-time{color:#2a0708;}
 .league-header.vip-time-only.status-lost .vtb-time{
-  background:rgba(235,91,95,.14);border-color:rgba(235,91,95,.35);
+  background:rgba(42,7,8,.2);box-shadow:inset 0 0 0 1px rgba(42,7,8,.16), 0 2px 6px rgba(0,0,0,.12);
 }
 
 .league-group{
@@ -892,69 +879,25 @@ body{
 <footer class="footer">© 2026 BM SURESCORE · PREMIUM FOOTBALL PREDICTIONS</footer>
 
 <script type="module">
-// ══════════════════════════════════════════
-// RESILIENT FIREBASE LOADING
-// If the network / CDN is unreachable (e.g. previewing inside an
-// offline editor), a normal top-level `import` throws and the WHOLE
-// module silently fails — no function ever gets defined, which is
-// why buttons like the theme toggle looked "frozen" with a console
-// error like "toggleTheme is not defined". Loading Firebase
-// dynamically inside a try/catch means the rest of the app (theme,
-// tabs, notifications panel) still works even with no internet.
-// ══════════════════════════════════════════
-let initializeApp, getFirestore, collection, query, where, limit,
-    onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
-    serverTimestamp, increment, getAuth, signInAnonymously, onAuthStateChanged;
+import { initializeApp }                                    from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getFirestore, collection, query, where, limit,
+         onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
+         serverTimestamp, increment }                         from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged }     from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
-let app = null, db = null, auth = null;
-let firebaseReady = false;
+const firebaseConfig = {
+  apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
+  authDomain:        "vip-app-b82d3.firebaseapp.com",
+  projectId:         "vip-app-b82d3",
+  storageBucket:     "vip-app-b82d3.firebasestorage.app",
+  messagingSenderId: "412845975498",
+  appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
+};
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
 
-async function loadFirebase() {
-  try {
-    const [appMod, fsMod, authMod] = await Promise.all([
-      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js"),
-      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js"),
-      import("https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js")
-    ]);
-
-    ({ initializeApp } = appMod);
-    ({ getFirestore, collection, query, where, limit, onSnapshot, doc,
-       getDoc, getDocs, setDoc, updateDoc, serverTimestamp, increment } = fsMod);
-    ({ getAuth, signInAnonymously, onAuthStateChanged } = authMod);
-
-    const firebaseConfig = {
-      apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
-      authDomain:        "vip-app-b82d3.firebaseapp.com",
-      projectId:         "vip-app-b82d3",
-      storageBucket:     "vip-app-b82d3.firebasestorage.app",
-      messagingSenderId: "412845975498",
-      appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
-    };
-    app  = initializeApp(firebaseConfig);
-    db   = getFirestore(app);
-    auth = getAuth(app);
-    firebaseReady = true;
-  } catch (e) {
-    console.warn("Firebase could not be loaded (offline or CDN blocked). Running in limited offline mode:", e);
-    firebaseReady = false;
-  }
-}
-
-function showOfflineNotice() {
-  ["freeSkeletonRows","vipSkeletonRows"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  });
-  ["emptyFree","emptyVip"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.remove("hidden");
-    el.querySelector("h3").innerText = "No connection";
-    el.querySelector("p").innerText = "Couldn't reach the server — check your internet connection";
-  });
-}
-
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
 
 // ══════════════════════════════════════════
 // ANTI-COPY / LONG-PRESS GUARD
@@ -2234,9 +2177,7 @@ function renderHistoryPage(type) {
 
   const leaguesHTML = matches.map(m => {
     const status = getStatus(m);
-    const headerHTML = isFree
-      ? buildLeagueHeader(buildLeagueLabel(m) || "OTHER MATCHES", m.time || "--:--", status)
-      : buildVipHeader(m.time || "--:--", status);
+    const headerHTML = buildLeagueHeader(buildLeagueLabel(m) || "OTHER MATCHES", m.time || "--:--", status);
     return `
     <div class="league-group">
       ${headerHTML}
@@ -2268,4 +2209,70 @@ function processHistory() {
 
   const freeGroups = {}, vipGroups = {};
 
-  latestFre
+  latestFreeAll.forEach(docSnap => {
+    const m = docSnap.data();
+    if (m.date === date) return;
+    if (!isPastDate(m.date)) return;
+    if (!freeGroups[m.date]) freeGroups[m.date] = [];
+    freeGroups[m.date].push(m);
+  });
+
+  latestVipAll.forEach(docSnap => {
+    const m = docSnap.data();
+    if (m.date === date) return;
+    if (!isPastDate(m.date)) return;
+    if (!vipGroups[m.date]) vipGroups[m.date] = [];
+    vipGroups[m.date].push(m);
+  });
+
+  freeHistGroups = freeGroups;
+  vipHistGroups  = vipGroups;
+  freeHistDates  = sortDatesDesc(freeGroups);
+  vipHistDates   = sortDatesDesc(vipGroups);
+
+  renderHistoryPage("free");
+  renderHistoryPage("vip");
+}
+
+function startHistoryListeners() {
+  onSnapshot(collection(db, "matches_free"), snapshot => {
+    latestFreeAll = snapshot.docs;
+    processHistory();
+  });
+  onSnapshot(collection(db, "matches_vip"), snapshot => {
+    latestVipAll = snapshot.docs;
+    processHistory();
+  });
+}
+
+function startCountdownRefresh() {
+  setInterval(() => {
+    document.querySelectorAll('.match-card[data-status="pending"]').forEach(card => {
+      const mtime = Number(card.dataset.mtime);
+      if (!mtime) return;
+      const badge = card.querySelector(".match-countdown");
+      if (badge) badge.innerText = getCountdownLabel(new Date(mtime));
+    });
+  }, 30000);
+}
+
+async function initApp() {
+  await ensureAnonAuth();
+  startBlockedWatcher();
+  startDeviceResetWatcher();
+  await syncServerTime();
+  computeDateFromNow();
+  startDateRolloverWatcher();
+  startFreeMatchesListener();
+  startVipMatchesListener();
+  startHistoryListeners();
+  startCountdownRefresh();
+  initVipCode();
+  trackVisit();
+  startVisitorHeartbeat();
+  showIdentityModalIfNeeded();
+}
+initApp();
+</script>
+</body>
+</html>
