@@ -87,6 +87,54 @@ body{
 .disp{font-family:'Space Grotesk',sans-serif;}
 .mono{font-family:'JetBrains Mono',monospace;}
 
+/* ══════════════════ APP SPLASH / LOADING SCREEN ══════════════════ */
+.app-splash{
+  position:fixed;inset:0;z-index:99999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .5s ease, visibility .5s ease;
+}
+.app-splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.splash-inner{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:20px;text-align:center;
+}
+.splash-mark{
+  width:64px;height:64px;border-radius:18px;flex-shrink:0;
+  background:linear-gradient(155deg, var(--gold), #a9760f);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:800;color:#0A0E15;
+  box-shadow:0 10px 30px rgba(224,178,74,0.35);
+  animation:splashPulse 1.8s ease-in-out infinite;
+  margin-bottom:16px;
+}
+@keyframes splashPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.07);}}
+.splash-title{
+  font-family:'Space Grotesk',sans-serif;font-size:clamp(18px,5vw,22px);font-weight:800;
+  letter-spacing:.06em;color:var(--ink);
+}
+.splash-sub{
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  opacity:.45;font-weight:600;margin-bottom:22px;
+}
+.splash-loader{
+  width:180px;height:4px;border-radius:10px;background:var(--surface-2);
+  overflow:hidden;position:relative;
+}
+.splash-loader-bar{
+  position:absolute;top:0;left:0;width:40%;height:100%;border-radius:10px;
+  background:linear-gradient(90deg, var(--gold), #f0c869);
+  animation:splashSlide 1.15s ease-in-out infinite;
+}
+@keyframes splashSlide{
+  0%{transform:translateX(-100%);}
+  100%{transform:translateX(350%);}
+}
+.splash-status{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.05em;
+  color:var(--slate);margin-top:14px;min-height:14px;
+}
+
 /* ══════════════════ TOPBAR ══════════════════ */
 .topbar{
   display:flex;justify-content:space-between;align-items:center;
@@ -678,6 +726,95 @@ body{
 </head>
 <body>
 
+<div id="appSplash" class="app-splash">
+  <div class="splash-inner">
+    <div class="splash-mark">B</div>
+    <div class="splash-title disp">BM SURESCORE</div>
+    <div class="splash-sub">Professional Football Predictions</div>
+    <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+    <div class="splash-status mono" id="splashStatus">Connecting…</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// SPLASH SAFETY NET — runs as a plain (non-module) script so it
+// executes independently of the Firebase module script below.
+// If the module fails to load (blocked network, CDN down, etc.)
+// this guarantees the splash never stays up forever.
+// ══════════════════════════════════════════
+(function () {
+  window.__splashHidden = false;
+
+  window.hideSplash = function () {
+    if (window.__splashHidden) return;
+    window.__splashHidden = true;
+    var el = document.getElementById("appSplash");
+    if (el) {
+      el.classList.add("hide");
+      setTimeout(function () { el.remove(); }, 600);
+    }
+  };
+
+  window.setSplashStatus = function (text) {
+    var el = document.getElementById("splashStatus");
+    if (el) el.innerText = text;
+  };
+
+  // Stage 1: if nothing has happened after 6s, tell the user why.
+  setTimeout(function () {
+    if (!window.__splashHidden) {
+      window.setSplashStatus("Taking longer than usual…");
+    }
+  }, 6000);
+
+  // Stage 2: after 10s, stop blocking the app no matter what —
+  // let the UI show (skeletons / empty states) instead of a
+  // frozen splash screen.
+  setTimeout(function () {
+    window.hideSplash();
+  }, 10000);
+
+  // ══════════════════════════════════════════
+  // MATCHES-LOADING SAFETY NET
+  // window.__matchesRendered is set to true by the Firebase module
+  // script the moment it successfully renders match data. If that
+  // never happens (module blocked/failed to load, or Firestore never
+  // responds), this plain script — independent of the module — steps
+  // in so the skeleton cards never stay frozen forever.
+  // ══════════════════════════════════════════
+  window.__matchesRendered = false;
+
+  function showMatchesFallback(message) {
+    if (window.__matchesRendered) return;
+    ["freeSkeletonRows", "vipSkeletonRows"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+    var fallbackHtml =
+      '<div class="empty-state">' +
+        '<div class="e-icon">📡</div>' +
+        '<h3>Connection Failed</h3>' +
+        '<p>' + message + '</p>' +
+        '<button onclick="location.reload()" style="margin-top:14px;padding:10px 22px;border:none;' +
+        'border-radius:10px;background:linear-gradient(155deg,#E0B24A,#a9760f);color:#171207;' +
+        'font-family:\'Space Grotesk\',sans-serif;font-weight:800;font-size:12px;cursor:pointer;' +
+        'letter-spacing:.05em;">🔄 Try Again</button>' +
+      '</div>';
+    ["emptyFree", "emptyVip"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { el.innerHTML = fallbackHtml; el.classList.remove("hidden"); }
+    });
+  }
+
+  setTimeout(function () {
+    if (!window.__matchesRendered) {
+      showMatchesFallback("Couldn't reach today's data. Check your connection or try reloading.");
+    }
+  }, 12000);
+})();
+</script>
+
 <div class="topbar">
   <div class="brand">
     <div class="brand-mark">B</div>
@@ -898,6 +1035,16 @@ const db   = getFirestore(app);
 const auth = getAuth(app);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+
+// ══════════════════════════════════════════
+// SPLASH / LOADING SCREEN
+// (hideSplash / setSplashStatus are defined globally by the plain
+// safety-net script above, so they work even if this module fails
+// to load. We just call window.hideSplash() / window.setSplashStatus()
+// from here.)
+// ══════════════════════════════════════════
+const hideSplash       = () => window.hideSplash && window.hideSplash();
+const setSplashStatus  = (t) => window.setSplashStatus && window.setSplashStatus(t);
 
 // ══════════════════════════════════════════
 // ANTI-COPY / LONG-PRESS GUARD
@@ -1170,22 +1317,22 @@ function startDeviceResetWatcher() {
     if (data.resetRequested !== true) return;
 
     try {
-      // 1) Futa localStorage yote ya kifaa hiki
+      // 1) Clear all localStorage for this device
       localStorage.clear();
 
-      // 2) Futa sessionStorage
+      // 2) Clear sessionStorage
       sessionStorage.clear();
 
-      // 3) Futa Cache Storage (service worker caches)
+      // 3) Clear Cache Storage (service worker caches)
       if ("caches" in window) {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));
       }
 
-      // 4) Acknowledge — zima flag ili isirudie kufuta tena
+      // 4) Acknowledge — turn off the flag so it doesn't reset again
       await updateDoc(doc(db, "device_resets", myId), { resetRequested: false });
 
-      // 5) Reload app ili ianze upya kama mtumiaji mpya kabisa
+      // 5) Reload the app so it starts fresh as a brand new visitor
       window.location.href = window.location.href.split("#")[0];
     } catch (e) {
       console.warn("Device reset failed:", e.message);
@@ -1940,7 +2087,7 @@ function renderGroupedByLeague(builtRows, isVip) {
     const timeLabel = row.m.time || "--:--";
     if (isVip) {
       if (vipUnlocked) {
-        // Baada ya kufunguliwa: onyesha jina halisi la league, si "VIP MATCH"
+        // Once unlocked: show the real league name instead of "VIP MATCH"
         const league = buildLeagueLabel(row.m) || "OTHER MATCHES";
         return `
           <div class="league-group">
@@ -1948,7 +2095,7 @@ function renderGroupedByLeague(builtRows, isVip) {
             <div class="match-list">${row.styledHtml}</div>
           </div>`;
       }
-      // Bado limefungwa: onyesha "VIP MATCH" generic ili lisifichue league
+      // Still locked: show a generic "VIP MATCH" label so the league isn't revealed
       return `
         <div class="league-group">
           ${buildVipHeader(timeLabel, row.status)}
@@ -2084,6 +2231,10 @@ function processTodayMatches() {
     document.getElementById("vipStreakNum").innerText = vipStreakCount;
     document.getElementById("vipStreakSub").innerText = `${vipStreakCount} consecutive win${vipStreakCount>1?'s':''} today`;
   }
+
+  // First data for today has arrived — hide the splash now
+  window.__matchesRendered = true;
+  hideSplash();
 }
 
 function startFreeMatchesListener() {
@@ -2091,6 +2242,11 @@ function startFreeMatchesListener() {
   onSnapshot(todayFreeQuery, snapshot => {
     latestFreeMatches = [];
     snapshot.forEach(docSnap => latestFreeMatches.push({ ...docSnap.data(), type: "free" }));
+    freeLoaded = true;
+    processTodayMatches();
+  }, err => {
+    console.warn("Free matches listener failed:", err.code, err.message);
+    latestFreeMatches = [];
     freeLoaded = true;
     processTodayMatches();
   });
@@ -2103,6 +2259,11 @@ function startVipMatchesListener() {
     snapshot.forEach(docSnap => latestVipMatches.push({ ...docSnap.data(), type: "vip" }));
     vipLoaded = true;
     processTodayMatches();
+  }, err => {
+    console.warn("VIP matches listener failed:", err.code, err.message);
+    latestVipMatches = [];
+    vipLoaded = true;
+    processTodayMatches();
   });
 }
 
@@ -2111,178 +2272,4 @@ window.addEventListener("vip-status-changed", () => processTodayMatches());
 let latestFreeAll = null;
 let latestVipAll  = null;
 
-let freeHistGroups = {}, vipHistGroups = {};
-let freeHistDates  = [], vipHistDates  = [];
-let freeHistPage   = 0,  vipHistPage   = 0;
-
-function isPastDate(dStr) {
-  const [d, mo, y] = dStr.split(".").map(Number);
-  const matchDay = new Date(y, mo - 1, d);
-  const n = now();
-  const todayDay = new Date(n.getFullYear(), n.getMonth(), n.getDate());
-  return matchDay < todayDay;
-}
-
-function sortDatesDesc(groups) {
-  const toISO = d => d.split(".").reverse().join("-");
-  return Object.keys(groups).sort((a, b) => new Date(toISO(b)) - new Date(toISO(a)));
-}
-
-function buildHistoryCard(m, isFree) {
-  const status = getStatus(m);
-  const tipClass = isFree ? "free" : "vip-lock";
-  const teams = splitTeams(m.match);
-  const hasFt = m.ft && m.ft !== "???" && m.ft.includes("-");
-
-  let teamsHTML;
-  if (teams) {
-    const scoreHTML = hasFt
-      ? `<span class="score-pair"><span class="score-digits ${status === 'win' ? 'win' : status === 'lost' ? 'lost' : ''}">${escapeHtml(m.ft.split("-")[0])}</span>${buildStatusIcon(status)}<span class="score-digits ${status === 'win' ? 'win' : status === 'lost' ? 'lost' : ''}">${escapeHtml(m.ft.split("-")[1])}</span></span>`
-      : `<span class="match-vs">VS</span>`;
-    teamsHTML = `
-      <div class="match-teams">
-        <span class="match-team home">${escapeHtml(teams.home)}</span>
-        ${scoreHTML}
-        <span class="match-team away">${escapeHtml(teams.away)}</span>
-      </div>`;
-  } else {
-    const ftSuffix = hasFt ? ` <span style="opacity:.5;font-family:'JetBrains Mono',monospace;">(${escapeHtml(m.ft)})</span>` : "";
-    teamsHTML = `<div class="match-single-name">${escapeHtml(m.match)}${ftSuffix}</div>`;
-  }
-
-  const badge = status === "win" ? `<span class="badge win">✅ WON</span>`
-              : status === "lost" ? `<span class="badge lost">❌ LOST</span>`
-              : `<span class="badge pending">⏳ PENDING</span>`;
-
-  return `
-    <div class="match-card ${status === 'win' ? 'is-win' : status === 'lost' ? 'is-lost' : ''}">
-      <div class="match-body">${teamsHTML}</div>
-      <div class="match-tip-bar">
-        <div>
-          <span class="tip-label ${tipClass}">${escapeHtml(humanizeTip(m.tip, m))}</span>
-          ${buildTipNote(m)}
-        </div>
-        <span class="odd-badge">${escapeHtml(m.odd)}</span>
-      </div>
-    </div>`;
-}
-
-function renderHistoryPage(type) {
-  const isFree   = type === "free";
-  const groups   = isFree ? freeHistGroups : vipHistGroups;
-  const dates    = isFree ? freeHistDates  : vipHistDates;
-  const pageIdx  = isFree ? freeHistPage   : vipHistPage;
-  const targetEl = document.getElementById(isFree ? "historyFree" : "historyVip");
-
-  if (dates.length === 0) {
-    targetEl.innerHTML = '<div class="empty-state"><div class="e-icon">📋</div><h3>No history yet</h3><p>Past results will appear here</p></div>';
-    return;
-  }
-
-  const clamped = Math.min(Math.max(pageIdx, 0), dates.length - 1);
-  if (isFree) freeHistPage = clamped; else vipHistPage = clamped;
-
-  const d = dates[clamped];
-  const matches = groups[d];
-
-  const leaguesHTML = matches.map(m => {
-    const status = getStatus(m);
-    const headerHTML = buildLeagueHeader(buildLeagueLabel(m) || "OTHER MATCHES", m.time || "--:--", status);
-    return `
-    <div class="league-group">
-      ${headerHTML}
-      <div class="match-list">${buildHistoryCard(m, isFree)}</div>
-    </div>`;
-  }).join("");
-
-  targetEl.innerHTML = `
-    <div class="hist-page-label">Page ${clamped + 1} of ${dates.length}</div>
-    <div class="date-group">📅 ${d}</div>
-    ${leaguesHTML}
-    <div class="hist-pager">
-      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', -1)" ${clamped === 0 ? "disabled" : ""}>‹ Prev Page</button>
-      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', 1)" ${clamped === dates.length - 1 ? "disabled" : ""}>Next Page ›</button>
-    </div>
-  `;
-}
-
-window.changeHistoryPage = function(type, delta) {
-  if (type === "free") freeHistPage += delta; else vipHistPage += delta;
-  renderHistoryPage(type);
-  navigator.vibrate?.([10]);
-  document.getElementById(type === "free" ? "historyFreeWrap" : "historyVipWrap")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-};
-
-function processHistory() {
-  if (!latestFreeAll || !latestVipAll) return;
-
-  const freeGroups = {}, vipGroups = {};
-
-  latestFreeAll.forEach(docSnap => {
-    const m = docSnap.data();
-    if (m.date === date) return;
-    if (!isPastDate(m.date)) return;
-    if (!freeGroups[m.date]) freeGroups[m.date] = [];
-    freeGroups[m.date].push(m);
-  });
-
-  latestVipAll.forEach(docSnap => {
-    const m = docSnap.data();
-    if (m.date === date) return;
-    if (!isPastDate(m.date)) return;
-    if (!vipGroups[m.date]) vipGroups[m.date] = [];
-    vipGroups[m.date].push(m);
-  });
-
-  freeHistGroups = freeGroups;
-  vipHistGroups  = vipGroups;
-  freeHistDates  = sortDatesDesc(freeGroups);
-  vipHistDates   = sortDatesDesc(vipGroups);
-
-  renderHistoryPage("free");
-  renderHistoryPage("vip");
-}
-
-function startHistoryListeners() {
-  onSnapshot(collection(db, "matches_free"), snapshot => {
-    latestFreeAll = snapshot.docs;
-    processHistory();
-  });
-  onSnapshot(collection(db, "matches_vip"), snapshot => {
-    latestVipAll = snapshot.docs;
-    processHistory();
-  });
-}
-
-function startCountdownRefresh() {
-  setInterval(() => {
-    document.querySelectorAll('.match-card[data-status="pending"]').forEach(card => {
-      const mtime = Number(card.dataset.mtime);
-      if (!mtime) return;
-      const badge = card.querySelector(".match-countdown");
-      if (badge) badge.innerText = getCountdownLabel(new Date(mtime));
-    });
-  }, 30000);
-}
-
-async function initApp() {
-  await ensureAnonAuth();
-  startBlockedWatcher();
-  startDeviceResetWatcher();
-  await syncServerTime();
-  computeDateFromNow();
-  startDateRolloverWatcher();
-  startFreeMatchesListener();
-  startVipMatchesListener();
-  startHistoryListeners();
-  startCountdownRefresh();
-  initVipCode();
-  trackVisit();
-  startVisitorHeartbeat();
-  showIdentityModalIfNeeded();
-}
-initApp();
-</script>
-</body>
-</html>
+let freeHistGroups = {}, vipHist
