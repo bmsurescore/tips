@@ -45,7 +45,6 @@
     <button class="dnav-btn" id="dnavHistory" onclick="showSection('history')">History</button>
   </div>
   <div class="topbar-right">
-    <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle theme"><div class="knob" id="themeKnob">☀</div></div>
     <div class="icon-btn" onclick="toggleNotifPanel()" id="notifBell">
       🔔<div class="notif-count hidden" id="notifCount">0</div>
     </div>
@@ -141,8 +140,57 @@
 
 <div id="vipSection" class="hidden">
   <div class="page-wrap">
+
+    <div class="eyebrow"><span class="dot"></span>VIP Tips</div>
+
+    <div class="trust-strip" id="trustStrip" style="display:none;"></div>
+
+    <div class="streak-bar gold" id="vipStreakBar" style="display:none;">
+      <div class="streak-emoji">🏆</div>
+      <div class="streak-text"><strong>VIP Win Streak</strong><small id="vipStreakSub">Consecutive wins today</small></div>
+      <div class="streak-num" id="vipStreakNum">0</div>
+    </div>
+
+    <div class="vip-cta-banner" id="vipCtaBanner" onclick="scrollToVipAuth()" style="display:none;">
+      <div class="vip-cta-left">
+        <span class="vip-cta-icon">🔓</span>
+        <div>
+          <div class="vip-cta-title">Unlock All VIP Tips</div>
+          <div class="vip-cta-sub" id="vipCtaSub">See pricing & Choose Your Plan</div>
+        </div>
+      </div>
+      <span class="vip-cta-arrow">↓</span>
+    </div>
+
+    <div class="panel">
+      <div id="vipSkeletonRows">
+        <div class="section-loader">
+          <div class="spin-ring"></div>
+          <div class="spin-label">Loading VIP tips…</div>
+        </div>
+        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
+        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
+        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
+      </div>
+      <div id="vipData" style="display:none;"></div>
+      <div id="emptyVip" class="empty-state hidden">
+        <div class="e-icon">💎</div><h3>No VIP tips today</h3><p>Premium tips will appear here soon</p>
+      </div>
+      <div id="summaryVip" class="summary-box" style="display:none;">
+        <div class="summary-stats">
+          <div class="stat-cell wins"><span class="val" id="sWinV">0</span><span class="lbl">Wins</span></div>
+          <div class="stat-cell lost"><span class="val" id="sLostV">0</span><span class="lbl">Lost</span></div>
+          <div class="stat-cell rate"><span class="val" id="sRateV">0%</span><span class="lbl">Win rate</span></div>
+          <div class="stat-cell odds"><span class="val" id="sOddsV">0.00</span><span class="lbl">Total odds</span></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Win rate tracker</span><span id="sProgLabelV">0 / 0</span></div>
+          <div class="progress-track"><div class="progress-fill" id="sProgBarV" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
     <div id="vipBox">
-      <div class="trust-strip" id="trustStrip" style="display:none;"></div>
       <div id="authBox" style="display:none;">
         <div class="auth-crown">👑</div>
         <div id="authTitle">VIP Access</div>
@@ -173,42 +221,6 @@
         <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line-soft);">
           <p style="font-size:11px;opacity:.4;margin-bottom:12px;">Don't have a VIP code?</p>
           <button class="whatsapp-btn" style="margin:0 auto;" onclick="goWhatsApp()">💬 Pay / Get VIP code — WhatsApp</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="eyebrow"><span class="dot"></span>VIP Tips</div>
-
-    <div class="streak-bar gold" id="vipStreakBar" style="display:none;">
-      <div class="streak-emoji">🏆</div>
-      <div class="streak-text"><strong>VIP Win Streak</strong><small id="vipStreakSub">Consecutive wins today</small></div>
-      <div class="streak-num" id="vipStreakNum">0</div>
-    </div>
-
-    <div class="panel">
-      <div id="vipSkeletonRows">
-        <div class="section-loader">
-          <div class="spin-ring"></div>
-          <div class="spin-label">Loading VIP tips…</div>
-        </div>
-        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
-        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
-        <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
-      </div>
-      <div id="vipData" style="display:none;"></div>
-      <div id="emptyVip" class="empty-state hidden">
-        <div class="e-icon">💎</div><h3>No VIP tips today</h3><p>Premium tips will appear here soon</p>
-      </div>
-      <div id="summaryVip" class="summary-box" style="display:none;">
-        <div class="summary-stats">
-          <div class="stat-cell wins"><span class="val" id="sWinV">0</span><span class="lbl">Wins</span></div>
-          <div class="stat-cell lost"><span class="val" id="sLostV">0</span><span class="lbl">Lost</span></div>
-          <div class="stat-cell rate"><span class="val" id="sRateV">0%</span><span class="lbl">Win rate</span></div>
-          <div class="stat-cell odds"><span class="val" id="sOddsV">0.00</span><span class="lbl">Total odds</span></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Win rate tracker</span><span id="sProgLabelV">0 / 0</span></div>
-          <div class="progress-track"><div class="progress-fill" id="sProgBarV" style="width:0%"></div></div>
         </div>
       </div>
     </div>
@@ -255,9 +267,24 @@
   <div class="splash-loader"></div>
 </div>
 <nav class="bottom-nav">
-  <div class="bnav-item active" id="bnavFree" onclick="showSection('free')"><div class="icon">🆓</div><div>Free</div></div>
-  <div class="bnav-item vip-nav" id="bnavVip" onclick="showSection('vip')"><div class="icon">💎</div><div>VIP</div></div>
-  <div class="bnav-item" id="bnavHistory" onclick="showSection('history')"><div class="icon">📊</div><div>History</div></div>
+  <div class="bnav-item active" id="bnavFree" onclick="showSection('free')">
+    <span class="bnav-icon-wrap">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+    </span>
+    <div>Free</div>
+  </div>
+  <div class="bnav-item vip-nav" id="bnavVip" onclick="showSection('vip')">
+    <span class="bnav-icon-wrap">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 3 5-6 5 6 4-3-2 10H5L3 8z"/></svg>
+    </span>
+    <div>VIP</div>
+  </div>
+  <div class="bnav-item" id="bnavHistory" onclick="showSection('history')">
+    <span class="bnav-icon-wrap">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 3"/></svg>
+    </span>
+    <div>History</div>
+  </div>
 </nav>
 
 <footer class="footer">© 2026 BM SURESCORE · PREMIUM FOOTBALL PREDICTIONS</footer>
