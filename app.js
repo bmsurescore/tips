@@ -1,12 +1,394 @@
-const SKELETON_HTML = `
+/* ══════════════════════════════════════════════════════════
+   LANGUAGE / i18n SYSTEM
+   ══════════════════════════════════════════════════════════ */
+const LANG_STRINGS = {
+  sw: {
+    nav_free: "Free", nav_vip: "VIP", nav_history: "Historia",
+    brand_tagline: "Utabiri wa Kitaalamu wa Mpira",
+
+    eyebrow_free: "Tips za Bure", eyebrow_vip: "Tips za VIP",
+
+    ticker_loading: "INAPAKIA FOMU YA LEO",
+    ticker_live: "FOMU HAI",
+    ticker_wins: "USHINDI LEO",
+    ticker_streak: "MFULULIZO",
+    ticker_pending: "MECHI ZINASUBIRI",
+    ticker_brand: "PROFESSIONAL FOOTBALL PREDICTIONS",
+
+    streak_free_title: "Mfululizo wa Ushindi Leo",
+    streak_free_sub: "mfululizo wa ushindi leo",
+    streak_vip_title: "Mfululizo wa Ushindi wa VIP",
+    streak_vip_sub: "mfululizo wa ushindi leo",
+
+    empty_free_title: "Hakuna mechi leo",
+    empty_free_sub: "Rudi baadaye kuona tips za bure za leo",
+    empty_vip_title: "Hakuna VIP tips leo",
+    empty_vip_sub: "Tips za premium zitaonekana hapa hivi karibuni",
+    empty_hist_title: "Bado hakuna historia",
+    empty_hist_sub: "Matokeo ya nyuma yataonekana hapa",
+
+    stat_wins: "Ushindi", stat_lost: "Kupoteza", stat_rate: "Kiwango cha ushindi", stat_odds: "Jumla ya odds",
+    progress_label: "Kifuatiliaji cha kiwango cha ushindi",
+
+    vip_cta_title: "Fungua VIP Tips Zote",
+    vip_cta_sub_default: "Bofya Kuona Bei",
+    vip_cta_sub_available: "tips za premium zinapatikana — bofya kufungua",
+
+    account_title: "Akaunti Yangu",
+    account_guest_msg: "Bado hujaingia kwenye akaunti.",
+    btn_login_signup: "Ingia / Jisajili",
+    btn_logout: "Toka",
+
+    notif_title: "Arifa",
+    notif_clear: "Futa zote",
+    notif_empty: "Hakuna arifa bado",
+
+    welcome_title: "Karibu BM SURESCORE",
+    auth_sub_login: "Ingia kwenye akaunti yako ili kuendelea pale ulipoishia.",
+    auth_sub_signup: "Fungua akaunti ili VIP status na tips zako zikufuate kwenye kifaa chochote.",
+    tab_login: "Ingia", tab_signup: "Jisajili",
+    label_name: "Jina Lako", label_email: "Barua Pepe", label_password: "Nywila",
+    placeholder_name: "mfano: Thobias Maiko",
+    placeholder_email: "mfano: thobias@gmail.com",
+    placeholder_password: "Angalau herufi 6",
+    btn_login: "Ingia ➜", btn_signup: "Jisajili ➜",
+    btn_logging_in: "INAINGIA…", btn_signing_up: "INAJISAJILI…",
+    forgot_password: "Umesahau nywila?",
+
+    blocked_title: "Umezuiwa Kuingia",
+    blocked_msg: "Akaunti yako imezuiwa kutumia BM SURESCORE. Kama unadhani hii ni kosa, wasiliana nasi kupitia WhatsApp.",
+    blocked_btn: "💬 Wasiliana WhatsApp",
+
+    vip_active: "VIP ACTIVE",
+    vip_expires: "Inaisha",
+
+    auth_crown_title: "Ufikiaji wa VIP",
+    auth_sub: "Weka msimbo wako wa VIP kufungua tips za premium za leo",
+    plans_title: "Chagua Mpango",
+    plan_2weeks_name: "Wiki 2", plan_2weeks_dur: "siku 14",
+    plan_1month_name: "Mwezi 1", plan_1month_dur: "siku 30",
+    plan_3months_name: "Miezi 3", plan_3months_dur: "siku 90",
+    plan_best_value: "Bei Bora",
+    per_day: "≈ Tsh {n}/siku",
+    vip_code_placeholder: "VIP-XXXX-XXXX",
+    btn_paste: "📋 Bandika",
+    btn_unlock_vip: "Fungua VIP",
+    btn_checking: "INAKAGUA…",
+    no_code_msg: "Huna msimbo wa VIP?",
+    whatsapp_btn: "💬 Lipa / Pata Msimbo wa VIP — WhatsApp",
+
+    hist_free_tab: "📊 Historia ya Bure",
+    hist_vip_tab: "💎 Historia ya VIP",
+    hist_free_eyebrow: "Historia ya Bure",
+    hist_vip_eyebrow: "Historia ya VIP",
+    hist_page_label: "Ukurasa {a} kati ya {b}",
+    hist_prev: "‹ Ukurasa Uliopita",
+    hist_next: "Ukurasa Ujao ›",
+
+    other_matches: "MECHI NYINGINE",
+
+    badge_won: "✅ USHINDI", badge_lost: "❌ IMEPOTEA", badge_vip_locked: "🔒 VIP", badge_pending: "⏳ INASUBIRI",
+    tip_premium: "🔒 Premium Tip",
+    lock_reveal: "🔒 FUNGUA KUONA",
+    lost_flag: "● Imepoteza",
+    vip_match_label: "MECHI YA VIP",
+
+    cd_days: "Siku", cd_hrs: "Saa", cd_min: "Dak", cd_sec: "Sek", cd_expired: "Imeisha",
+
+    kickoff: "Mwanzo",
+
+    trust_tips: "Tips zilizochambuliwa",
+    trust_winrate: "Kiwango cha ushindi cha wakati wote",
+    trust_vipusers: "Wanachama wa VIP hai",
+
+    loading_free: "Inapakia tips za leo…",
+    loading_vip: "Inapakia VIP tips…",
+    loading_history: "Inapakia historia…",
+    loading_generic: "Inapakia…",
+
+    footer_copy: "© 2026 BM SURESCORE · UTABIRI WA KITAALAMU WA MPIRA",
+
+    splash_tagline: "Utabiri wa Kitaalamu wa Mpira",
+
+    /* JS-only runtime messages */
+    err_name_first: "Tafadhali jaza jina lako kwanza",
+    err_email_required: "Tafadhali jaza barua pepe",
+    err_email_invalid: "Barua pepe si sahihi, tafadhali angalia tena",
+    err_password_short: "Nywila iwe angalau herufi 6",
+    welcome_new_account: "Karibu {name}! Akaunti yako imefunguliwa. 👋",
+    login_success: "Umeingia kikamilifu. Karibu tena! 👋",
+    logout_success: "Umetoka kwenye akaunti yako 👋",
+    forgot_email_required: "Jaza barua pepe sahihi kwanza ili tukutumie link ya kurejesha nywila",
+    reset_email_sent: "Tumetuma email ya kurejesha nywila. Angalia inbox yako.",
+
+    code_empty: "Tafadhali weka msimbo wa VIP kwanza",
+    code_invalid: "Msimbo si sahihi ❌",
+    code_disabled: "Msimbo huu umezimwa ❌",
+    code_expired: "Msimbo huu umeisha muda ⏰",
+    code_in_use: "Msimbo huu tayari unatumika kwenye kifaa kingine ❌",
+    code_accepted: "Msimbo umekubaliwa ✅ Inafungua…",
+    code_claimed: "Msimbo huu tayari umeshachukuliwa ❌",
+    code_error: "Hitilafu: {msg}",
+    code_now_other_device: "Msimbo huu sasa unatumika kwenye kifaa kingine ❌",
+    code_disabled_popup: "Msimbo huu wa VIP umezimwa ❌",
+    code_expired_popup: "Msimbo huu wa VIP umeisha muda ⏰",
+    vip_expired_popup: "⏰ Msimbo wako wa VIP umeisha muda. Tafadhali omba msimbo mpya.",
+    vip_expired_notif: "Msimbo wako wa VIP umeisha muda.",
+    vip_unlocked_toast: "🎉 VIP tips zimefunguliwa!",
+    vip_unlocked_notif: "Ufikiaji wa VIP umewashwa! Furahia utabiri wa premium.",
+    starting_soon_popup: "⏰ Inaanza hivi karibuni:\n{match}",
+    starting_soon_notif: "{match} itaanza baada ya dakika ~10",
+    win_notif: "USHINDI ✅ {match}",
+    lost_notif: "IMEPOTEA ❌ {match}",
+
+    clipboard_empty: "Ubao wa kunakili ni tupu",
+    clipboard_error: "Imeshindwa kusoma ubao wa kunakili — bonyeza kwa muda mrefu na uchague Bandika",
+
+    tap_pricing: "Bofya Kuona Bei",
+    premium_available: "tips {n} za premium zinapatikana — bofya kufungua",
+  },
+  en: {
+    nav_free: "Free", nav_vip: "VIP", nav_history: "History",
+    brand_tagline: "Professional Football Predictions",
+
+    eyebrow_free: "Free Tips", eyebrow_vip: "VIP Tips",
+
+    ticker_loading: "LOADING TODAY'S FORM",
+    ticker_live: "LIVE FORM",
+    ticker_wins: "WINS TODAY",
+    ticker_streak: "STREAK",
+    ticker_pending: "MATCHES PENDING",
+    ticker_brand: "PROFESSIONAL FOOTBALL PREDICTIONS",
+
+    streak_free_title: "Today's Win Streak",
+    streak_free_sub: "consecutive wins today",
+    streak_vip_title: "VIP Win Streak",
+    streak_vip_sub: "consecutive wins today",
+
+    empty_free_title: "No matches today",
+    empty_free_sub: "Check back later for today's free tips",
+    empty_vip_title: "No VIP tips today",
+    empty_vip_sub: "Premium tips will appear here soon",
+    empty_hist_title: "No history yet",
+    empty_hist_sub: "Past results will appear here",
+
+    stat_wins: "Wins", stat_lost: "Lost", stat_rate: "Win rate", stat_odds: "Total odds",
+    progress_label: "Win rate tracker",
+
+    vip_cta_title: "Unlock All VIP Tips",
+    vip_cta_sub_default: "Tap to View Pricing",
+    vip_cta_sub_available: "premium predictions available — tap to unlock",
+
+    account_title: "My Account",
+    account_guest_msg: "You're not logged in yet.",
+    btn_login_signup: "Log In / Sign Up",
+    btn_logout: "Log Out",
+
+    notif_title: "Notifications",
+    notif_clear: "Clear all",
+    notif_empty: "No notifications yet",
+
+    welcome_title: "Welcome to BM SURESCORE",
+    auth_sub_login: "Log in to your account to continue where you left off.",
+    auth_sub_signup: "Create an account so your VIP status and tips follow you on any device.",
+    tab_login: "Log In", tab_signup: "Sign Up",
+    label_name: "Your Name", label_email: "Email", label_password: "Password",
+    placeholder_name: "e.g. Thobias Maiko",
+    placeholder_email: "e.g. thobias@gmail.com",
+    placeholder_password: "At least 6 characters",
+    btn_login: "Log In ➜", btn_signup: "Sign Up ➜",
+    btn_logging_in: "LOGGING IN…", btn_signing_up: "SIGNING UP…",
+    forgot_password: "Forgot password?",
+
+    blocked_title: "Access Blocked",
+    blocked_msg: "Your account has been blocked from accessing BM SURESCORE. If you think this is a mistake, contact us on WhatsApp.",
+    blocked_btn: "💬 Contact WhatsApp",
+
+    vip_active: "VIP ACTIVE",
+    vip_expires: "Expires",
+
+    auth_crown_title: "VIP Access",
+    auth_sub: "Enter your VIP code to unlock today's premium predictions",
+    plans_title: "Choose a plan",
+    plan_2weeks_name: "2 Weeks", plan_2weeks_dur: "14 days",
+    plan_1month_name: "1 Month", plan_1month_dur: "30 days",
+    plan_3months_name: "3 Months", plan_3months_dur: "90 days",
+    plan_best_value: "Best value",
+    per_day: "≈ Tsh {n}/day",
+    vip_code_placeholder: "VIP-XXXX-XXXX",
+    btn_paste: "📋 Paste",
+    btn_unlock_vip: "Unlock VIP",
+    btn_checking: "CHECKING…",
+    no_code_msg: "Don't have a VIP code?",
+    whatsapp_btn: "💬 Pay / Get VIP code — WhatsApp",
+
+    hist_free_tab: "📊 Free History",
+    hist_vip_tab: "💎 VIP History",
+    hist_free_eyebrow: "Free History",
+    hist_vip_eyebrow: "VIP History",
+    hist_page_label: "Page {a} of {b}",
+    hist_prev: "‹ Prev Page",
+    hist_next: "Next Page ›",
+
+    other_matches: "OTHER MATCHES",
+
+    badge_won: "✅ WON", badge_lost: "❌ LOST", badge_vip_locked: "🔒 VIP", badge_pending: "⏳ PENDING",
+    tip_premium: "🔒 Premium Tip",
+    lock_reveal: "🔒 UNLOCK TO REVEAL",
+    lost_flag: "● Lost",
+    vip_match_label: "VIP MATCH",
+
+    cd_days: "Days", cd_hrs: "Hrs", cd_min: "Min", cd_sec: "Sec", cd_expired: "Expired",
+
+    kickoff: "Kick-off",
+
+    trust_tips: "Tips analyzed",
+    trust_winrate: "All-time win rate",
+    trust_vipusers: "Active VIP members",
+
+    loading_free: "Loading today's tips…",
+    loading_vip: "Loading VIP tips…",
+    loading_history: "Loading history…",
+    loading_generic: "Loading…",
+
+    footer_copy: "© 2026 BM SURESCORE · PREMIUM FOOTBALL PREDICTIONS",
+
+    splash_tagline: "Professional Football Predictions",
+
+    /* JS-only runtime messages */
+    err_name_first: "Please enter your name first",
+    err_email_required: "Please enter your email",
+    err_email_invalid: "That email doesn't look right, please check again",
+    err_password_short: "Password must be at least 6 characters",
+    welcome_new_account: "Welcome {name}! Your account has been created. 👋",
+    login_success: "Logged in successfully. Welcome back! 👋",
+    logout_success: "You've been logged out 👋",
+    forgot_email_required: "Enter a valid email first so we can send you a reset link",
+    reset_email_sent: "We've sent a password reset email. Check your inbox.",
+
+    code_empty: "Please enter a VIP code first",
+    code_invalid: "Invalid code ❌",
+    code_disabled: "This code has been disabled ❌",
+    code_expired: "This code has expired ⏰",
+    code_in_use: "This code is already in use on another device ❌",
+    code_accepted: "Code accepted ✅ Unlocking…",
+    code_claimed: "This code has already been claimed ❌",
+    code_error: "Error: {msg}",
+    code_now_other_device: "This code is now active on another device ❌",
+    code_disabled_popup: "This VIP code has been disabled ❌",
+    code_expired_popup: "This VIP code has expired ⏰",
+    vip_expired_popup: "⏰ Your VIP code has expired. Please request a new code.",
+    vip_expired_notif: "Your VIP code has expired.",
+    vip_unlocked_toast: "🎉 VIP tips unlocked!",
+    vip_unlocked_notif: "VIP access activated! Enjoy premium predictions.",
+    starting_soon_popup: "⏰ Starting soon:\n{match}",
+    starting_soon_notif: "{match} starts in ~10 minutes",
+    win_notif: "WIN ✅ {match}",
+    lost_notif: "LOST ❌ {match}",
+
+    clipboard_empty: "Clipboard is empty",
+    clipboard_error: "Couldn't read clipboard — long-press the field and choose Paste instead",
+
+    tap_pricing: "Tap to View Pricing",
+    premium_available: "{n} premium predictions available — tap to unlock",
+  }
+};
+
+let currentLang = localStorage.getItem("appLang") || "sw";
+
+function t(key, vars) {
+  const dict = LANG_STRINGS[currentLang] || LANG_STRINGS.sw;
+  let str = dict[key] !== undefined ? dict[key] : (LANG_STRINGS.sw[key] !== undefined ? LANG_STRINGS.sw[key] : key);
+  if (vars) {
+    Object.keys(vars).forEach(k => { str = str.replace(`{${k}}`, vars[k]); });
+  }
+  return str;
+}
+
+function applyStaticTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.innerText = t(el.getAttribute("data-i18n"));
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.setAttribute("placeholder", t(el.getAttribute("data-i18n-placeholder")));
+  });
+  const langBtn = document.getElementById("langBtn");
+  if (langBtn) {
+    langBtn.innerText = currentLang === "sw" ? "SW" : "EN";
+    langBtn.classList.toggle("active-en", currentLang === "en");
+  }
+  document.documentElement.setAttribute("lang", currentLang);
+}
+
+function refreshDynamicUI() {
+  // Re-render everything built by JS so it picks up the new language
+  updateAccountUI();
+  renderNotifications();
+  if (freeLoaded && vipLoaded) processTodayMatches();
+  if (latestFreeAll && latestVipAll) processHistory();
+  // auth tab labels / mode-dependent text
+  if (typeof authMode !== "undefined") {
+    window.setAuthMode(authMode);
+  }
+  // vip pricing subtitle needs current vTotal; cheap re-derivation
+  const vTotal = (latestVipMatches || []).length;
+  updateVipCtaBanner(vTotal);
+}
+
+window.setLanguage = function(lang) {
+  if (lang !== "sw" && lang !== "en") return;
+  currentLang = lang;
+  localStorage.setItem("appLang", currentLang);
+  applyStaticTranslations();
+  refreshDynamicUI();
+};
+
+window.toggleLanguage = function() {
+  window.setLanguage(currentLang === "sw" ? "en" : "sw");
+  navigator.vibrate?.([10]);
+};
+
+/* ══════════════════════════════════════════════════════════
+   THEME (LIGHT / DARK MODE)
+   ══════════════════════════════════════════════════════════ */
+let currentTheme = localStorage.getItem("appTheme") ||
+  (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+
+function updateThemeBtn() {
+  const btn = document.getElementById("themeBtn");
+  if (!btn) return;
+  btn.innerText = currentTheme === "dark" ? "🌙" : "☀️";
+  btn.classList.toggle("active-light", currentTheme === "light");
+  btn.setAttribute("title", currentTheme === "dark" ? "Dark mode" : "Light mode");
+}
+
+window.setTheme = function(theme) {
+  if (theme !== "dark" && theme !== "light") return;
+  currentTheme = theme;
+  document.documentElement.setAttribute("data-theme", currentTheme);
+  localStorage.setItem("appTheme", currentTheme);
+  updateThemeBtn();
+};
+
+window.toggleTheme = function() {
+  window.setTheme(currentTheme === "dark" ? "light" : "dark");
+  navigator.vibrate?.([10]);
+};
+
+/* ══════════════════════════════════════════════════════════
+   SKELETON LOADING
+   ══════════════════════════════════════════════════════════ */
+function skeletonHtml() {
+  return `
   <div class="section-loader">
     <div class="spin-ring"></div>
-    <div class="spin-label">Loading…</div>
+    <div class="spin-label">${t('loading_generic')}</div>
   </div>
   <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
   <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
   <div class="skeleton-card"><div class="sk-head"></div><div class="sk-body"><div class="sk-team"></div><div class="sk-score"></div><div class="sk-team"></div></div><div class="sk-tip"></div></div>
 `;
+}
 
 function flashSectionLoading(type) {
   const dataEl    = document.getElementById(type === "free" ? "freeData" : "vipData");
@@ -26,7 +408,7 @@ function flashSectionLoading(type) {
 
   skelEl.style.opacity = "1";
   skelEl.style.display = "block";
-  skelEl.innerHTML = SKELETON_HTML;
+  skelEl.innerHTML = skeletonHtml();
 
   processTodayMatches();
 }
@@ -37,7 +419,12 @@ import {
   onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
   serverTimestamp, increment
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import {
+  getAuth, signInAnonymously, onAuthStateChanged,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, updateProfile, sendPasswordResetEmail,
+  linkWithCredential, EmailAuthProvider
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
@@ -53,7 +440,7 @@ const auth = getAuth(app);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
 
-const TEXT_INPUT_IDS = ["vipCodeInput", "identityName", "identityEmail"];
+const TEXT_INPUT_IDS = ["vipCodeInput", "authName", "authEmail", "authPassword"];
 document.addEventListener("contextmenu", e => {
   if (TEXT_INPUT_IDS.includes(e.target.id)) return;
   e.preventDefault();
@@ -65,7 +452,7 @@ document.addEventListener("selectstart", e => {
 });
 document.addEventListener("dragstart", e => e.preventDefault());
 
-document.documentElement.setAttribute("data-theme", "dark");
+document.documentElement.setAttribute("data-theme", currentTheme);
 
 let splashHidden = false;
 const splashMinTimePromise = new Promise(res => setTimeout(res, 900));
@@ -140,7 +527,8 @@ function now() {
 let today = null;
 let date  = null;
 
-const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const WEEKDAYS_SW = ["Jumapili","Jumatatu","Jumanne","Jumatano","Alhamisi","Ijumaa","Jumamosi"];
+const WEEKDAYS_EN = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
 function computeDateFromNow() {
   today = now();
@@ -156,43 +544,106 @@ function computeDateFromNow() {
     localStorage.setItem("lastDate", date);
   }
 
-  const weekday = WEEKDAYS[today.getDay()];
-  document.getElementById("title").innerText = `TODAY — ${weekday}, ${date}`;
+  updateDateHeading();
 }
 
-let currentUid = null;
-let authReadyPromise = null;
+function updateDateHeading() {
+  if (!today) return;
+  const weekdays = currentLang === "en" ? WEEKDAYS_EN : WEEKDAYS_SW;
+  const label = currentLang === "en" ? "TODAY" : "LEO";
+  const weekday = weekdays[today.getDay()];
+  document.getElementById("title").innerText = `${label} — ${weekday}, ${date}`;
+}
+
+let currentUid  = null;
+let currentUser = null;
+let isGuestAccount = true;
+let appInitialized = false;
+let authListenerStarted = false;
+let authReadyResolve = null;
+
+function initAuthListener() {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const isNewSession = currentUid !== user.uid;
+      currentUid     = user.uid;
+      currentUser    = user;
+      isGuestAccount = user.isAnonymous;
+
+      if (authReadyResolve) { authReadyResolve(user.uid); authReadyResolve = null; }
+
+      updateAccountUI();
+
+      if (isNewSession && appInitialized) {
+        await onUserChanged();
+      }
+    } else {
+      currentUid  = null;
+      currentUser = null;
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.error("Anonymous sign-in failed:", e.code, e.message);
+        if (authReadyResolve) { authReadyResolve(null); authReadyResolve = null; }
+      }
+    }
+  });
+}
 
 function ensureAnonAuth() {
-  if (authReadyPromise) return authReadyPromise;
-  authReadyPromise = new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUid = user.uid;
-        resolve(user.uid);
-      } else {
-        signInAnonymously(auth).catch((e) => {
-          console.error("Anonymous sign-in failed:", e.code, e.message);
-          resolve(null);
-        });
-      }
-    });
+  if (currentUid) return Promise.resolve(currentUid);
+  return new Promise((resolve) => {
+    authReadyResolve = resolve;
+    if (!authListenerStarted) {
+      authListenerStarted = true;
+      initAuthListener();
+    }
   });
-  return authReadyPromise;
 }
 
 function getVisitorId() {
   return currentUid;
 }
 
+// Called whenever the signed-in identity changes AFTER the app has already
+// finished its first load (e.g. the person logs in, signs up, or logs out
+// mid-session). Re-runs everything that depends on "who is this device/account".
+async function onUserChanged() {
+  document.getElementById("vipRequestCard")?.remove();
+  vipUnlocked   = false;
+  vipExpiryDate = null;
+  if (autoLogoutTimer)   clearTimeout(autoLogoutTimer);
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  startBlockedWatcher();
+  startDeviceResetWatcher();
+  await trackVisit();
+
+  if (currentVipCode) subscribeToCode(currentVipCode);
+  else initVipCode();
+
+  showAuthModalIfNeeded();
+}
+
+// NOTE: We deliberately do NOT create/update an analytics_visitors record
+// for anonymous (guest) sessions. Every device gets signed in anonymously
+// on first load just so Firestore rules have a stable uid to work with —
+// that is an auth-layer implementation detail, not someone "using the app"
+// in a way we want to track. A person only becomes a trackable "visitor"
+// once they've actually created an account or logged in (isGuestAccount
+// === false). This keeps analytics_visitors (and the Admin Panel's
+// Visitors / VIP Users tabs) limited to real, identifiable users instead
+// of filling up with anonymous device sessions that have no name or email.
 async function trackVisit() {
   try {
+    if (isGuestAccount) return;
     const visitorId = getVisitorId();
     if (!visitorId) return;
     const ref  = doc(db, "analytics_visitors", visitorId);
     const snap = await getDoc(ref).catch(() => null);
     const nowISO = now().toISOString();
-    const identity = getStoredIdentity();
+    const name  = (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || null) : null;
+    const email = (currentUser && !currentUser.isAnonymous) ? (currentUser.email || null) : null;
 
     if (snap && snap.exists()) {
       const data = snap.data();
@@ -202,7 +653,8 @@ async function trackVisit() {
         lastDate:   date,
         visits:     increment(1),
         daysActive: isNewDay ? increment(1) : increment(0),
-        ...(identity ? { name: identity.name, email: identity.email } : {})
+        ...(!data.firstSeen ? { firstSeen: data.lastSeen || nowISO } : {}),
+        ...((name || email) ? { name, email } : {})
       }, { merge: true });
     } else {
       await setDoc(ref, {
@@ -212,8 +664,8 @@ async function trackVisit() {
         visits:          1,
         daysActive:      1,
         vipUnlockedEver: false,
-        name:            identity ? identity.name  : null,
-        email:           identity ? identity.email : null
+        name,
+        email
       }, { merge: true });
     }
   } catch (e) {
@@ -221,84 +673,206 @@ async function trackVisit() {
   }
 }
 
-function getStoredIdentity() {
-  try {
-    const raw = localStorage.getItem("userIdentity");
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
-}
+let authMode = "login"; // "login" | "signup"
 
-function showIdentityModalIfNeeded() {
-  if (!getStoredIdentity()) {
-    document.getElementById("identityModal").style.display = "flex";
-    setTimeout(() => document.getElementById("identityName")?.focus(), 200);
-  }
-}
-async function saveIdentity(name, email) {
-  const identity = { name, email: email || null, savedAt: now().toISOString() };
-  localStorage.setItem("userIdentity", JSON.stringify(identity));
-  try {
-    const ref  = doc(db, "analytics_visitors", getVisitorId());
-    const snap = await getDoc(ref).catch(() => null);
-
-    if (snap && snap.exists()) {
-      await setDoc(ref, { name, email: email || null }, { merge: true });
-    } else {
-      const nowISO = now().toISOString();
-      await setDoc(ref, {
-        firstSeen: nowISO,
-        lastSeen: nowISO,
-        lastDate: date,
-        visits: 1,
-        daysActive: 1,
-        vipUnlockedEver: false,
-        name, email: email || null
-      }, { merge: true });
+function translateAuthError(code) {
+  const map = {
+    sw: {
+      "auth/credential-already-in-use": "Barua pepe hii tayari ina akaunti nyingine. Jaribu kuingia (Ingia) badala yake.",
+      "auth/email-already-in-use": "Barua pepe hii tayari ina akaunti. Jaribu kuingia (Ingia) badala yake.",
+      "auth/invalid-email":        "Barua pepe uliyoweka si sahihi.",
+      "auth/weak-password":        "Nywila ni dhaifu — tumia angalau herufi 6.",
+      "auth/missing-password":     "Tafadhali jaza nywila.",
+      "auth/user-not-found":       "Hakuna akaunti yenye barua pepe hii.",
+      "auth/wrong-password":       "Nywila si sahihi, jaribu tena.",
+      "auth/invalid-credential":   "Barua pepe au nywila si sahihi.",
+      "auth/too-many-requests":    "Majaribio mengi kwa muda mfupi. Tafadhali subiri kidogo kisha jaribu tena.",
+      "auth/network-request-failed": "Tatizo la mtandao. Angalia intaneti yako na ujaribu tena."
+    },
+    en: {
+      "auth/credential-already-in-use": "This email already has another account. Try logging in instead.",
+      "auth/email-already-in-use": "This email already has an account. Try logging in instead.",
+      "auth/invalid-email":        "That email address isn't valid.",
+      "auth/weak-password":        "Password is too weak — use at least 6 characters.",
+      "auth/missing-password":     "Please enter a password.",
+      "auth/user-not-found":       "No account found with this email.",
+      "auth/wrong-password":       "Incorrect password, please try again.",
+      "auth/invalid-credential":   "Incorrect email or password.",
+      "auth/too-many-requests":    "Too many attempts in a short time. Please wait a moment and try again.",
+      "auth/network-request-failed": "Network problem. Check your connection and try again."
     }
-  } catch (e) {
-    console.warn("Could not save identity to server:", e.message);
+  };
+  const dict = map[currentLang] || map.sw;
+  return dict[code] || (currentLang === "en" ? "An error occurred, please try again." : "Hitilafu imetokea, tafadhali jaribu tena.");
+}
+
+function showAuthModalIfNeeded() {
+  const modal = document.getElementById("authModal");
+  if (!modal) return;
+  if (isGuestAccount) {
+    modal.style.display = "flex";
+  } else {
+    modal.style.display = "none";
   }
 }
-window.submitIdentity = async function() {
-  const nameEl  = document.getElementById("identityName");
-  const emailEl = document.getElementById("identityEmail");
-  const msgEl   = document.getElementById("identityMsg");
-  const btn     = document.getElementById("identityBtn");
-  const name    = nameEl.value.trim();
-  const email   = emailEl.value.trim();
+
+window.setAuthMode = function(mode) {
+  authMode = mode;
+  document.getElementById("authTabLogin").classList.toggle("active", mode === "login");
+  document.getElementById("authTabSignup").classList.toggle("active", mode === "signup");
+  document.getElementById("authNameField").classList.toggle("hidden", mode === "login");
+  document.getElementById("authSubmitBtn").innerText = mode === "signup" ? t('btn_signup') : t('btn_login');
+  document.getElementById("authModalSub").innerText = mode === "signup" ? t('auth_sub_signup') : t('auth_sub_login');
+  document.getElementById("authMsg").innerText = "";
+};
+
+window.submitAuth = async function() {
+  const nameEl  = document.getElementById("authName");
+  const emailEl = document.getElementById("authEmail");
+  const passEl  = document.getElementById("authPassword");
+  const msgEl   = document.getElementById("authMsg");
+  const btn     = document.getElementById("authSubmitBtn");
+
+  const name     = nameEl.value.trim();
+  const email    = emailEl.value.trim();
+  const password = passEl.value;
 
   msgEl.style.color = "var(--coral)";
 
-  if (!name) {
-    msgEl.innerText = "Please enter your name first";
+  if (authMode === "signup" && !name) {
+    msgEl.innerText = t('err_name_first');
     nameEl.focus();
     return;
   }
   if (!email) {
-    msgEl.innerText = "Please enter your email";
+    msgEl.innerText = t('err_email_required');
     emailEl.focus();
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    msgEl.innerText = "Invalid email, please check again";
+    msgEl.innerText = t('err_email_invalid');
+    emailEl.focus();
+    return;
+  }
+  if (!password || password.length < 6) {
+    msgEl.innerText = t('err_password_short');
+    passEl.focus();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = authMode === "signup" ? t('btn_signing_up') : t('btn_logging_in');
+  msgEl.style.color = "var(--pitch)";
+  msgEl.innerText = "";
+
+  try {
+    if (authMode === "signup") {
+      if (currentUser && currentUser.isAnonymous) {
+        // Mtumiaji alikuwa anonymous — unganisha akaunti mpya kwenye
+        // UID ile ile ili VIP code, historia na notifications zibaki.
+        const credential = EmailAuthProvider.credential(email, password);
+        const result = await linkWithCredential(currentUser, credential);
+        if (name) await updateProfile(result.user, { displayName: name });
+      } else {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        if (name) await updateProfile(cred.user, { displayName: name });
+      }
+      document.getElementById("authModal").style.display = "none";
+      addNotification(t('welcome_new_account', { name }), "👋");
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+      document.getElementById("authModal").style.display = "none";
+      addNotification(t('login_success'), "👋");
+    }
+  } catch (e) {
+    console.error("Auth failed:", e.code, e.message);
+    msgEl.style.color = "var(--coral)";
+    msgEl.innerText = translateAuthError(e.code);
+  }
+
+  btn.disabled = false;
+  btn.innerText = authMode === "signup" ? t('btn_signup') : t('btn_login');
+};
+
+window.handleForgotPassword = async function() {
+  const emailEl = document.getElementById("authEmail");
+  const msgEl   = document.getElementById("authMsg");
+  const email   = emailEl.value.trim();
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msgEl.style.color = "var(--coral)";
+    msgEl.innerText = t('forgot_email_required');
     emailEl.focus();
     return;
   }
 
-  btn.disabled = true; btn.innerText = "SAVING…";
-  msgEl.style.color = "var(--pitch)";
-  msgEl.innerText = "";
-
-  await saveIdentity(name, email);
-
-  document.getElementById("identityModal").style.display = "none";
-  addNotification(`Welcome ${name}! You're all set. 👋`, "👋");
-  btn.disabled = false; btn.innerText = "Continue ➜";
+  try {
+    await sendPasswordResetEmail(auth, email);
+    msgEl.style.color = "var(--pitch)";
+    msgEl.innerText = t('reset_email_sent');
+  } catch (e) {
+    msgEl.style.color = "var(--coral)";
+    msgEl.innerText = translateAuthError(e.code);
+  }
 };
 
+window.logoutAccount = async function() {
+  try {
+    await signOut(auth);
+    localStorage.removeItem("authSkipped");
+    closeAccountPanel();
+    showToast(t('logout_success'));
+  } catch (e) {
+    console.warn("Logout failed:", e.message);
+  }
+};
+
+function updateAccountUI() {
+  const btn   = document.getElementById("accountBtn");
+  const panel = document.getElementById("accountPanel");
+  if (!btn || !panel) return;
+
+  if (!isGuestAccount && currentUser) {
+    btn.classList.add("account-active");
+    panel.innerHTML = `
+      <div class="notif-panel-header">${t('account_title')}</div>
+      <div class="account-panel-body">
+        <div class="account-name">${escapeHtml(currentUser.displayName || (currentLang === "en" ? "User" : "Mtumiaji"))}</div>
+        <div class="account-email">${escapeHtml(currentUser.email || "")}</div>
+        <button class="account-logout-btn" onclick="logoutAccount()">${t('btn_logout')}</button>
+      </div>`;
+  } else {
+    btn.classList.remove("account-active");
+    panel.innerHTML = `
+      <div class="notif-panel-header">${t('account_title')}</div>
+      <div class="account-panel-body account-guest">
+        <div class="account-guest-msg">${t('account_guest_msg')}</div>
+        <button class="account-login-btn" onclick="closeAccountPanel(); document.getElementById('authModal').style.display='flex';">${t('btn_login_signup')}</button>
+      </div>`;
+  }
+}
+
+window.toggleAccountPanel = function() {
+  const panel = document.getElementById("accountPanel");
+  updateAccountUI();
+  panel.classList.toggle("open");
+};
+window.closeAccountPanel = function() {
+  document.getElementById("accountPanel")?.classList.remove("open");
+};
+document.addEventListener("click", e => {
+  if (!e.target.closest(".account-panel") && !e.target.closest("#accountBtn")) {
+    closeAccountPanel();
+  }
+});
+
+// Heartbeat is likewise skipped for guest sessions — see trackVisit() note
+// above. There is nothing useful to "keep alive" in analytics_visitors for
+// a session that never got a record created in the first place.
 function startVisitorHeartbeat() {
   setInterval(async () => {
     try {
+      if (isGuestAccount) return;
       const visitorId = getVisitorId();
       if (!visitorId) return;
       const ref = doc(db, "analytics_visitors", visitorId);
@@ -309,6 +883,7 @@ function startVisitorHeartbeat() {
 
 async function markVisitorVipUnlocked() {
   try {
+    if (isGuestAccount) return;
     const ref = doc(db, "analytics_visitors", getVisitorId());
     await setDoc(ref, { vipUnlockedEver: true }, { merge: true });
   } catch (e) { /* non-critical */ }
@@ -380,7 +955,7 @@ function renderNotifications() {
   const list    = document.getElementById("notifList");
   const countEl = document.getElementById("notifCount");
   if (notifications.length === 0) {
-    list.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+    list.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
     countEl.classList.add("hidden");
     return;
   }
@@ -507,8 +1082,8 @@ function performExpiryLogout() {
   document.getElementById("vipRequestCard")?.remove();
   document.getElementById("authBox").style.display = "block";
   document.getElementById("vipCtaBanner").style.display = "flex";
-  showPopup("⏰ Your VIP code has expired. Please request a new code.");
-  addNotification("Your VIP code has expired.", "⏰");
+  showPopup(t('vip_expired_popup'));
+  addNotification(t('vip_expired_notif'), "⏰");
 }
 
 let countdownInterval = null;
@@ -523,7 +1098,7 @@ function updateCountdownDisplay() {
   if (!wrap) return;
   const msLeft = vipExpiryDate - now();
   if (msLeft <= 0) {
-    wrap.innerHTML = `<div class="cd-unit"><b>0</b><span>Expired</span></div>`;
+    wrap.innerHTML = `<div class="cd-unit"><b>0</b><span>${t('cd_expired')}</span></div>`;
     return;
   }
   const totalSeconds = Math.floor(msLeft / 1000);
@@ -533,13 +1108,13 @@ function updateCountdownDisplay() {
   const secs    = totalSeconds % 60;
 
   wrap.innerHTML = `
-    <div class="cd-unit"><b>${days}</b><span>Days</span></div>
+    <div class="cd-unit"><b>${days}</b><span>${t('cd_days')}</span></div>
     <span class="cd-sep">:</span>
-    <div class="cd-unit"><b>${String(hours).padStart(2,"0")}</b><span>Hrs</span></div>
+    <div class="cd-unit"><b>${String(hours).padStart(2,"0")}</b><span>${t('cd_hrs')}</span></div>
     <span class="cd-sep">:</span>
-    <div class="cd-unit"><b>${String(mins).padStart(2,"0")}</b><span>Min</span></div>
+    <div class="cd-unit"><b>${String(mins).padStart(2,"0")}</b><span>${t('cd_min')}</span></div>
     <span class="cd-sep">:</span>
-    <div class="cd-unit"><b>${String(secs).padStart(2,"0")}</b><span>Sec</span></div>`;
+    <div class="cd-unit"><b>${String(secs).padStart(2,"0")}</b><span>${t('cd_sec')}</span></div>`;
   wrap.classList.toggle("urgent", days < 1);
 }
 
@@ -588,7 +1163,7 @@ function subscribeToCode(code) {
       clearStoredCode();
       document.getElementById("authBox").style.display = "block";
       document.getElementById("vipCtaBanner").style.display = "flex";
-      showPopup("This code is now active on another device ❌");
+      showPopup(t('code_now_other_device'));
       window.dispatchEvent(new Event("vip-status-changed"));
       return;
     }
@@ -603,8 +1178,8 @@ function subscribeToCode(code) {
 
       if (!localStorage.getItem("vipWasUnlocked")) {
         localStorage.setItem("vipWasUnlocked", "1");
-        setTimeout(() => { showToast("🎉 VIP tips unlocked!"); }, 500);
-        addNotification("VIP access activated! Enjoy premium predictions.", "💎");
+        setTimeout(() => { showToast(t('vip_unlocked_toast')); }, 500);
+        addNotification(t('vip_unlocked_notif'), "💎");
         markVisitorVipUnlocked();
       }
 
@@ -613,8 +1188,8 @@ function subscribeToCode(code) {
           <div class="vip-status-left">
             <span class="vip-crown">👑</span>
             <div>
-              <div class="vip-status-title">VIP ACTIVE</div>
-              <div class="vip-expiry">Expires ${data.expiry}</div>
+              <div class="vip-status-title">${t('vip_active')}</div>
+              <div class="vip-expiry">${t('vip_expires')} ${data.expiry}</div>
             </div>
           </div>
           <div class="vip-countdown-live" id="vipCountdownWrap"></div>
@@ -629,7 +1204,7 @@ function subscribeToCode(code) {
       document.getElementById("authBox").style.display = "block";
       document.getElementById("vipCtaBanner").style.display = "flex";
       if (wasStored) {
-        showPopup(!data.active ? "This VIP code has been disabled ❌" : "This VIP code has expired ⏰");
+        showPopup(!data.active ? t('code_disabled_popup') : t('code_expired_popup'));
       }
       window.dispatchEvent(new Event("vip-status-changed"));
     }
@@ -653,11 +1228,11 @@ window.unlockVipCode = async function() {
 
   if (!code) {
     msgEl.style.color = "var(--coral)";
-    msgEl.innerText = "Please enter a VIP code first";
+    msgEl.innerText = t('code_empty');
     return;
   }
 
-  btn.disabled = true; btn.innerText = "CHECKING…";
+  btn.disabled = true; btn.innerText = t('btn_checking');
   msgEl.style.color = "var(--slate)";
   msgEl.innerText = "";
 
@@ -667,7 +1242,7 @@ window.unlockVipCode = async function() {
 
     if (snap.empty) {
       msgEl.style.color = "var(--coral)";
-      msgEl.innerText = "Invalid code ❌";
+      msgEl.innerText = t('code_invalid');
     } else {
       const codeDoc = snap.docs[0];
       const data    = codeDoc.data();
@@ -677,13 +1252,13 @@ window.unlockVipCode = async function() {
 
       if (!data.active) {
         msgEl.style.color = "var(--coral)";
-        msgEl.innerText = "This code has been disabled ❌";
+        msgEl.innerText = t('code_disabled');
       } else if (!exp || n > exp) {
         msgEl.style.color = "var(--coral)";
-        msgEl.innerText = "This code has expired ⏰";
+        msgEl.innerText = t('code_expired');
       } else if (data.redeemedBy && data.redeemedBy !== myId) {
         msgEl.style.color = "var(--coral)";
-        msgEl.innerText = "This code is already in use on another device ❌";
+        msgEl.innerText = t('code_in_use');
       } else {
         try {
           if (!data.redeemedBy) {
@@ -692,22 +1267,22 @@ window.unlockVipCode = async function() {
           localStorage.setItem("vipCode", code);
           currentVipCode = code;
           msgEl.style.color = "var(--pitch)";
-          msgEl.innerText = "Code accepted ✅ Unlocking…";
+          msgEl.innerText = t('code_accepted');
           subscribeToCode(code);
         } catch (claimErr) {
           console.error("claim failed:", claimErr.code, claimErr.message);
           msgEl.style.color = "var(--coral)";
-          msgEl.innerText = "This code has already been claimed ❌";
+          msgEl.innerText = t('code_claimed');
         }
       }
     }
   } catch (e) {
     console.error("unlockVipCode failed:", e.code, e.message);
     msgEl.style.color = "var(--coral)";
-    msgEl.innerText = "Error: " + (e.message || "please try again");
+    msgEl.innerText = t('code_error', { msg: e.message || "" });
   }
 
-  btn.disabled = false; btn.innerText = "UNLOCK VIP";
+  btn.disabled = false; btn.innerText = t('btn_unlock_vip');
 };
 
 window.pasteVipCode = async function() {
@@ -721,26 +1296,32 @@ window.pasteVipCode = async function() {
       navigator.vibrate?.([10]);
     } else {
       msgEl.style.color = "var(--slate)";
-      msgEl.innerText = "Clipboard is empty";
+      msgEl.innerText = t('clipboard_empty');
     }
   } catch (e) {
     msgEl.style.color = "var(--coral)";
-    msgEl.innerText = "Couldn't read clipboard — long-press the field and choose Paste instead";
+    msgEl.innerText = t('clipboard_error');
     input.focus();
   }
 };
 
 window.goWhatsAppBlocked = function() {
-  const msg = `Hello 👋\n\nI've been blocked from accessing the BM SURESCORE app. Please help me check my account.`;
+  const msg = currentLang === "en"
+    ? `Hello 👋\n\nI've been blocked from accessing the BM SURESCORE app. Please help me check my account.`
+    : `Hujambo 👋\n\nNimezuiwa kutumia app ya BM SURESCORE. Tafadhali nisaidie kuangalia akaunti yangu.`;
   window.open(`https://wa.me/255617123799?text=${encodeURIComponent(msg)}`, "_blank");
 };
 
 window.goWhatsApp = function() {
   let msg;
-  if (selectedPlan) {
-    msg = `Hello 👋\n\nI would like to buy a VIP code 💎 for BM SURESCORE.\n\nPlan selected: ${selectedPlan.label} — Tsh ${selectedPlan.price}\n\nPlease send me payment instructions.`;
+  if (currentLang === "en") {
+    msg = selectedPlan
+      ? `Hello 👋\n\nI would like to buy a VIP code 💎 for BM SURESCORE.\n\nPlan selected: ${selectedPlan.label} — Tsh ${selectedPlan.price}\n\nPlease send me payment instructions.`
+      : `Hello 👋\n\nI would like to get a VIP code 💎 for BM SURESCORE.\n\nPlease send me access.`;
   } else {
-    msg = `Hello 👋\n\nI would like to get a VIP code 💎 for BM SURESCORE.\n\nPlease send me access.`;
+    msg = selectedPlan
+      ? `Hujambo 👋\n\nNingependa kununua msimbo wa VIP 💎 kwa BM SURESCORE.\n\nMpango niliochagua: ${selectedPlan.label} — Tsh ${selectedPlan.price}\n\nTafadhali nitumie maelekezo ya malipo.`
+      : `Hujambo 👋\n\nNingependa kupata msimbo wa VIP 💎 kwa BM SURESCORE.\n\nTafadhali nitumie ufikiaji.`;
   }
   window.open(`https://wa.me/255617123799?text=${encodeURIComponent(msg)}`, "_blank");
 };
@@ -748,8 +1329,8 @@ window.goWhatsApp = function() {
 function humanizeTip(tip, m) {
   if (!tip) return tip;
   const teams = splitTeams(m.match);
-  const home = teams ? teams.home : "Home";
-  const away = teams ? teams.away : "Away";
+  const home = teams ? teams.home : (currentLang === "en" ? "Home" : "Nyumbani");
+  const away = teams ? teams.away : (currentLang === "en" ? "Away" : "Ugenini");
   const t = tip.toUpperCase().trim();
   if (t.includes(" & ")) {
     return t.split(" & ").map(leg => humanizeSingle(leg.trim(), home, away)).join(" & ");
@@ -758,68 +1339,100 @@ function humanizeTip(tip, m) {
 }
 
 function humanizeSingle(tRaw, home, away) {
+  const L = {
+    en: {
+      firstHalf: "1st Half: ", wins: n => `${n} Wins`, draw: "Draw",
+      dcHome: n => `Double Chance (${n} or Draw)`, dc12: `Double Chance (${home} or ${away})`,
+      dnb: n => `${n} Wins (Draw No Bet)`,
+      bttsYes: "Both Teams to Score - Yes", bttsNo: "Both Teams to Score - No",
+      qualify: n => `${n} to Qualify`, winEither: n => `${n} Wins Either Half`,
+      over: (n, g) => `${n} Over ${g} Goals`, under: (n, g) => `${n} Under ${g} Goals`,
+      totalOver: g => `Over ${g} Goals`, totalUnder: g => `Under ${g} Goals`,
+      odd: "Total Goals - Odd", even: "Total Goals - Even",
+      cleanSheet: n => `${n} Clean Sheet`, winToNil: n => `${n} Wins to Nil`,
+      goalsRange: (n, a, b) => `${n} Goals ${a}-${b}`, totalGoalsRange: (a,b) => `Total Goals ${a}-${b}`,
+      handicap: (n, line) => `${n} Handicap (${line})`,
+      correctScore: s => `Correct Score ${s}`,
+    },
+    sw: {
+      firstHalf: "Nusu ya Kwanza: ", wins: n => `${n} Anashinda`, draw: "Sare",
+      dcHome: n => `Nafasi Mbili (${n} au Sare)`, dc12: `Nafasi Mbili (${home} au ${away})`,
+      dnb: n => `${n} Anashinda (Sare Haihesabiwi)`,
+      bttsYes: "Timu Zote Kufunga - Ndiyo", bttsNo: "Timu Zote Kufunga - Hapana",
+      qualify: n => `${n} Kufuzu`, winEither: n => `${n} Kushinda Nusu Yoyote`,
+      over: (n, g) => `${n} Zaidi ya ${g} Magoli`, under: (n, g) => `${n} Chini ya ${g} Magoli`,
+      totalOver: g => `Zaidi ya ${g} Magoli`, totalUnder: g => `Chini ya ${g} Magoli`,
+      odd: "Jumla ya Magoli - Isiyogawanyika", even: "Jumla ya Magoli - Inayogawanyika",
+      cleanSheet: n => `${n} Hakupokea Goli`, winToNil: n => `${n} Kushinda Bila Kupokea Goli`,
+      goalsRange: (n, a, b) => `${n} Magoli ${a}-${b}`, totalGoalsRange: (a,b) => `Jumla ya Magoli ${a}-${b}`,
+      handicap: (n, line) => `${n} Handicap (${line})`,
+      correctScore: s => `Skoa Sahihi ${s}`,
+    }
+  };
+  const lang = L[currentLang] || L.sw;
+
   let t = tRaw;
   let prefix = "";
   if (t.startsWith("HT ") || t.startsWith("1H ")) {
-    prefix = "1st Half: ";
+    prefix = lang.firstHalf;
     t = t.replace(/^(HT|1H)\s+/, "");
   }
 
   const htft = t.match(/^(1|X|2)\s*\/\s*(1|X|2)$/);
   if (htft) {
-    const map = { "1": home, "X": "Draw", "2": away };
+    const map = { "1": home, "X": lang.draw, "2": away };
     return `HT/FT: ${map[htft[1]]} / ${map[htft[2]]}`;
   }
 
-  if (t === "1" || t === "HOME") return prefix + `${home} Wins`;
-  if (t === "2" || t === "AWAY") return prefix + `${away} Wins`;
-  if (t === "X" || t === "DRAW") return prefix + "Draw";
-  if (t === "1X") return prefix + `Double Chance (${home} or Draw)`;
-  if (t === "X2") return prefix + `Double Chance (${away} or Draw)`;
-  if (t === "12") return prefix + `Double Chance (${home} or ${away})`;
-  if (t === "DNB HOME") return prefix + `${home} Wins (Draw No Bet)`;
-  if (t === "DNB AWAY") return prefix + `${away} Wins (Draw No Bet)`;
+  if (t === "1" || t === "HOME") return prefix + lang.wins(home);
+  if (t === "2" || t === "AWAY") return prefix + lang.wins(away);
+  if (t === "X" || t === "DRAW") return prefix + lang.draw;
+  if (t === "1X") return prefix + lang.dcHome(home);
+  if (t === "X2") return prefix + lang.dcHome(away);
+  if (t === "12") return prefix + lang.dc12;
+  if (t === "DNB HOME") return prefix + lang.dnb(home);
+  if (t === "DNB AWAY") return prefix + lang.dnb(away);
 
   if (t.includes("BTTS") || t.includes("BOTH")) {
-    if (t.includes("YES")) return prefix + "Both Teams to Score - Yes";
-    if (t.includes("NO"))  return prefix + "Both Teams to Score - No";
+    if (t.includes("YES")) return prefix + lang.bttsYes;
+    if (t.includes("NO"))  return prefix + lang.bttsNo;
   }
 
   if (t.includes("QUALIFY")) {
-    return prefix + (t.includes("HOME") ? `${home} to Qualify` : `${away} to Qualify`);
+    return prefix + (t.includes("HOME") ? lang.qualify(home) : lang.qualify(away));
   }
 
   if (t.includes("WIN EITHER HALF")) {
-    return prefix + (t.includes("HOME") ? `${home} Wins Either Half` : `${away} Wins Either Half`);
+    return prefix + (t.includes("HOME") ? lang.winEither(home) : lang.winEither(away));
   }
 
-  if (t.includes("HOME OVER"))  return prefix + `${home} Over ${t.split(" ").pop()} Goals`;
-  if (t.includes("AWAY OVER"))  return prefix + `${away} Over ${t.split(" ").pop()} Goals`;
-  if (t.includes("HOME UNDER")) return prefix + `${home} Under ${t.split(" ").pop()} Goals`;
-  if (t.includes("AWAY UNDER")) return prefix + `${away} Under ${t.split(" ").pop()} Goals`;
+  if (t.includes("HOME OVER"))  return prefix + lang.over(home, t.split(" ").pop());
+  if (t.includes("AWAY OVER"))  return prefix + lang.over(away, t.split(" ").pop());
+  if (t.includes("HOME UNDER")) return prefix + lang.under(home, t.split(" ").pop());
+  if (t.includes("AWAY UNDER")) return prefix + lang.under(away, t.split(" ").pop());
 
   if (t.includes("GOALS") && /\d+\s*-\s*\d+/.test(t)) {
     const r = t.match(/(\d+)\s*-\s*(\d+)/);
-    if (t.includes("HOME")) return prefix + `${home} Goals ${r[1]}-${r[2]}`;
-    if (t.includes("AWAY")) return prefix + `${away} Goals ${r[1]}-${r[2]}`;
-    return prefix + `Total Goals ${r[1]}-${r[2]}`;
+    if (t.includes("HOME")) return prefix + lang.goalsRange(home, r[1], r[2]);
+    if (t.includes("AWAY")) return prefix + lang.goalsRange(away, r[1], r[2]);
+    return prefix + lang.totalGoalsRange(r[1], r[2]);
   }
 
-  if (t.includes("OVER"))  return prefix + `Over ${t.split(" ").pop()} Goals`;
-  if (t.includes("UNDER")) return prefix + `Under ${t.split(" ").pop()} Goals`;
-  if (t === "ODD")  return prefix + "Total Goals - Odd";
-  if (t === "EVEN") return prefix + "Total Goals - Even";
-  if (t === "HOME CLEAN SHEET") return prefix + `${home} Clean Sheet`;
-  if (t === "AWAY CLEAN SHEET") return prefix + `${away} Clean Sheet`;
-  if (t === "HOME WIN TO NIL") return prefix + `${home} Wins to Nil`;
-  if (t === "AWAY WIN TO NIL") return prefix + `${away} Wins to Nil`;
+  if (t.includes("OVER"))  return prefix + lang.totalOver(t.split(" ").pop());
+  if (t.includes("UNDER")) return prefix + lang.totalUnder(t.split(" ").pop());
+  if (t === "ODD")  return prefix + lang.odd;
+  if (t === "EVEN") return prefix + lang.even;
+  if (t === "HOME CLEAN SHEET") return prefix + lang.cleanSheet(home);
+  if (t === "AWAY CLEAN SHEET") return prefix + lang.cleanSheet(away);
+  if (t === "HOME WIN TO NIL") return prefix + lang.winToNil(home);
+  if (t === "AWAY WIN TO NIL") return prefix + lang.winToNil(away);
 
   if (t.includes("AH")) {
     const line = t.split(" ").pop();
-    return prefix + (t.includes("AWAY") ? `${away} Handicap (${line})` : `${home} Handicap (${line})`);
+    return prefix + lang.handicap(t.includes("AWAY") ? away : home, line);
   }
 
-  if (/^\d+-\d+$/.test(t)) return prefix + `Correct Score ${t}`;
+  if (/^\d+-\d+$/.test(t)) return prefix + lang.correctScore(t);
 
   return prefix + tRaw;
 }
@@ -962,7 +1575,7 @@ function getCountdownLabel(matchTime) {
     const mins = Math.floor((diff % 3600000) / 60000);
     return `⏳ ${hrs}h ${mins}m`;
   }
-  return "Kick-off";
+  return t('kickoff');
 }
 
 function buildMatchTime(dateStr, timeStr) {
@@ -992,7 +1605,7 @@ function buildLeagueLabel(m) {
 }
 
 function buildLeagueHeader(league, timeLabel, status) {
-  const lostFlag = status === "lost" ? '<span class="lost-flag">● Lost</span>' : "";
+  const lostFlag = status === "lost" ? `<span class="lost-flag">${t('lost_flag')}</span>` : "";
   return `
     <div class="league-header">
       <span class="league-name">🏆 ${escapeHtml(league)}</span>
@@ -1001,25 +1614,25 @@ function buildLeagueHeader(league, timeLabel, status) {
 }
 
 function buildVipHeader(timeLabel, status) {
-  const lostFlag = status === "lost" ? '<span class="lost-flag">● Lost</span>' : "";
+  const lostFlag = status === "lost" ? `<span class="lost-flag">${t('lost_flag')}</span>` : "";
   return `
     <div class="league-header vip-time-only">
-      <span class="vtb"><span class="vtb-crown">👑</span>VIP MATCH<span class="vtb-time">🕐 ${escapeHtml(timeLabel)}</span></span>
+      <span class="vtb"><span class="vtb-crown">👑</span>${t('vip_match_label')}<span class="vtb-time">🕐 ${escapeHtml(timeLabel)}</span></span>
       ${lostFlag}
     </div>`;
 }
 
 function buildStatusBadge(status, locked, countdown) {
-  if (locked)               return `<span class="badge locked">🔒 VIP</span>`;
-  if (status === "win")     return `<span class="badge win">✅ WON</span>`;
-  if (status === "lost")    return `<span class="badge lost">❌ LOST</span>`;
+  if (locked)               return `<span class="badge locked">${t('badge_vip_locked')}</span>`;
+  if (status === "win")     return `<span class="badge win">${t('badge_won')}</span>`;
+  if (status === "lost")    return `<span class="badge lost">${t('badge_lost')}</span>`;
   return `<span class="badge pending match-countdown">${countdown}</span>`;
 }
 
 function buildTipNote(m) {
-  if (m.tipType === "corners" && m.corners) return `<span class="corners-note">🚩 corners: ${escapeHtml(m.corners)}</span>`;
+  if (m.tipType === "corners" && m.corners) return `<span class="corners-note">🚩 ${currentLang === 'en' ? 'corners' : 'kona'}: ${escapeHtml(m.corners)}</span>`;
   if (m.ht && (m.tipType === "htft" || /HT|1H|\//.test((m.tip||"").toUpperCase()))) {
-    return `<span class="corners-note">⏱ HT: ${escapeHtml(m.ht)}</span>`;
+    return `<span class="corners-note">⏱ ${currentLang === 'en' ? 'HT' : 'Nusu'}: ${escapeHtml(m.ht)}</span>`;
   }
   return "";
 }
@@ -1040,7 +1653,7 @@ function buildRow(m, matchTime, isFree) {
   let tipHTML, oddHTML;
 
   if (locked) {
-    tipHTML = `<span class="tip-label vip-premium">🔒 Premium Tip</span>`;
+    tipHTML = `<span class="tip-label vip-premium">${t('tip_premium')}</span>`;
     oddHTML = `<span class="odd-badge dim">•••</span>`;
   } else {
     tipHTML = `<span class="tip-label ${tipClass}">${escapeHtml(humanizeTip(m.tip, m))}</span>${buildTipNote(m)}`;
@@ -1052,7 +1665,7 @@ function buildRow(m, matchTime, isFree) {
   if (locked) {
     teamsHTML = `
       <div class="locked-teams-wrap">
-        <div class="lock-badge">🔒 UNLOCK TO REVEAL</div>
+        <div class="lock-badge">${t('lock_reveal')}</div>
       </div>`;
   } else if (teams) {
     const hasFt = m.ft && m.ft !== "???" && m.ft.includes("-");
@@ -1099,11 +1712,11 @@ function updateTicker(rows, globalStreak) {
   const total = rows.filter(r => getStatus(r.m) !== "pending").length;
   const pending = rows.length - total;
   const parts = [
-    `<span>●</span>&nbsp;LIVE FORM ${date || ""}`,
-    `<b>${wins}</b> WINS TODAY`,
-    `<b>${globalStreak}</b> STREAK`,
-    `${pending} MATCHES PENDING`,
-    `<b>BM SURESCORE</b> · PROFESSIONAL FOOTBALL PREDICTIONS`
+    `<span>●</span>&nbsp;${t('ticker_live')} ${date || ""}`,
+    `<b>${wins}</b> ${t('ticker_wins')}`,
+    `<b>${globalStreak}</b> ${t('ticker_streak')}`,
+    `${pending} ${t('ticker_pending')}`,
+    `<b>BM SURESCORE</b> · ${t('ticker_brand')}`
   ];
   track.innerHTML = parts.join("&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;").repeat(2);
 }
@@ -1114,7 +1727,7 @@ function renderGroupedByLeague(builtRows, isVip) {
     const timeLabel = row.m.time || "--:--";
     if (isVip) {
       if (vipUnlocked) {
-        const league = buildLeagueLabel(row.m) || "OTHER MATCHES";
+        const league = buildLeagueLabel(row.m) || t('other_matches');
         return `
           <div class="league-group">
             ${buildLeagueHeader(league, timeLabel, row.status)}
@@ -1127,7 +1740,7 @@ function renderGroupedByLeague(builtRows, isVip) {
           <div class="match-list">${row.styledHtml}</div>
         </div>`;
     }
-    const league = buildLeagueLabel(row.m) || "OTHER MATCHES";
+    const league = buildLeagueLabel(row.m) || t('other_matches');
     return `
       <div class="league-group">
         ${buildLeagueHeader(league, timeLabel, row.status)}
@@ -1154,8 +1767,8 @@ function processTodayMatches() {
         if (!notifiedMatches[key]) {
           notifiedMatches[key] = true;
           localStorage.setItem("notifiedMatches", JSON.stringify(notifiedMatches));
-          showPopup(`⏰ Starting soon:\n${m.match}`);
-          addNotification(`${m.match} starts in ~10 minutes`, "⏰");
+          showPopup(t('starting_soon_popup', { match: m.match }));
+          addNotification(t('starting_soon_notif', { match: m.match }), "⏰");
         }
       }
     }
@@ -1177,8 +1790,8 @@ function processTodayMatches() {
       if (status !== "pending" && !notifiedMatches[key]) {
         notifiedMatches[key] = true;
         localStorage.setItem("notifiedMatches", JSON.stringify(notifiedMatches));
-        if (status === "win")  addNotification(`WIN ✅ ${m.match}`, "✅");
-        if (status === "lost") addNotification(`LOST ❌ ${m.match}`, "❌");
+        if (status === "win")  addNotification(t('win_notif', { match: m.match }), "✅");
+        if (status === "lost") addNotification(t('lost_notif', { match: m.match }), "❌");
       }
     }
 
@@ -1261,12 +1874,12 @@ function processTodayMatches() {
   document.getElementById("freeStreakBar").style.display = freeStreakCount > 0 ? "flex" : "none";
   if (freeStreakCount > 0) {
     document.getElementById("freeStreakNum").innerText = freeStreakCount;
-    document.getElementById("freeStreakSub").innerText = `${freeStreakCount} consecutive win${freeStreakCount>1?'s':''} today`;
+    document.getElementById("freeStreakSub").innerText = `${freeStreakCount} ${t('streak_free_sub')}`;
   }
   document.getElementById("vipStreakBar").style.display = vipStreakCount > 0 ? "flex" : "none";
   if (vipStreakCount > 0) {
     document.getElementById("vipStreakNum").innerText = vipStreakCount;
-    document.getElementById("vipStreakSub").innerText = `${vipStreakCount} consecutive win${vipStreakCount>1?'s':''} today`;
+    document.getElementById("vipStreakSub").innerText = `${vipStreakCount} ${t('streak_vip_sub')}`;
   }
 
   updateVipCtaBanner(vTotal);
@@ -1283,8 +1896,8 @@ function updateVipCtaBanner(vTotal) {
   banner.style.display = "flex";
   if (sub) {
     sub.innerText = vTotal > 0
-      ? `${vTotal} premium predictions available — tap to unlock`
-      : `Tap to View Pricing`;
+      ? t('premium_available', { n: vTotal })
+      : t('tap_pricing');
   }
 }
 
@@ -1357,9 +1970,9 @@ function buildHistoryCard(m, isFree) {
     teamsHTML = `<div class="match-single-name">${escapeHtml(m.match)}${ftSuffix}</div>`;
   }
 
-  const badge = status === "win" ? `<span class="badge win">✅ WON</span>`
-    : status === "lost" ? `<span class="badge lost">❌ LOST</span>`
-    : `<span class="badge pending">⏳ PENDING</span>`;
+  const badge = status === "win" ? `<span class="badge win">${t('badge_won')}</span>`
+    : status === "lost" ? `<span class="badge lost">${t('badge_lost')}</span>`
+    : `<span class="badge pending">${t('badge_pending')}</span>`;
 
   return `
     <div class="match-card ${status === 'win' ? 'is-win' : status === 'lost' ? 'is-lost' : ''}">
@@ -1382,7 +1995,7 @@ function renderHistoryPage(type) {
   const targetEl = document.getElementById(isFree ? "historyFree" : "historyVip");
 
   if (dates.length === 0) {
-    renderWithFade(targetEl, '<div class="empty-state"><div class="e-icon">📋</div><h3>No history yet</h3><p>Past results will appear here</p></div>');
+    renderWithFade(targetEl, `<div class="empty-state"><div class="e-icon">📋</div><h3>${t('empty_hist_title')}</h3><p>${t('empty_hist_sub')}</p></div>`);
     return;
   }
 
@@ -1394,7 +2007,7 @@ function renderHistoryPage(type) {
 
   const leaguesHTML = matches.map(m => {
     const status = getStatus(m);
-    const headerHTML = buildLeagueHeader(buildLeagueLabel(m) || "OTHER MATCHES", m.time || "--:--", status);
+    const headerHTML = buildLeagueHeader(buildLeagueLabel(m) || t('other_matches'), m.time || "--:--", status);
     return `
       <div class="league-group">
         ${headerHTML}
@@ -1403,12 +2016,12 @@ function renderHistoryPage(type) {
   }).join("");
 
   renderWithFade(targetEl, `
-    <div class="hist-page-label">Page ${clamped + 1} of ${dates.length}</div>
+    <div class="hist-page-label">${t('hist_page_label', { a: clamped + 1, b: dates.length })}</div>
     <div class="date-group">📅 ${d}</div>
     ${leaguesHTML}
     <div class="hist-pager">
-      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', -1)" ${clamped === 0 ? "disabled" : ""}>‹ Prev Page</button>
-      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', 1)" ${clamped === dates.length - 1 ? "disabled" : ""}>Next Page ›</button>
+      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', -1)" ${clamped === 0 ? "disabled" : ""}>${t('hist_prev')}</button>
+      <button class="hist-pager-btn" onclick="changeHistoryPage('${type}', 1)" ${clamped === dates.length - 1 ? "disabled" : ""}>${t('hist_next')}</button>
     </div>`);
 }
 
@@ -1484,9 +2097,9 @@ function renderTrustStrip(stats) {
   }
   wrap.style.display = "flex";
   wrap.innerHTML = `
-    ${totalTips != null ? `<div class="trust-cell"><span class="t-val">${totalTips}+</span><span class="t-lbl">Tips analyzed</span></div>` : ""}
-    ${winRate   != null ? `<div class="trust-cell"><span class="t-val">${winRate}%</span><span class="t-lbl">All-time win rate</span></div>` : ""}
-    ${vipUsers  != null ? `<div class="trust-cell"><span class="t-val">${vipUsers}+</span><span class="t-lbl">Active VIP members</span></div>` : ""}
+    ${totalTips != null ? `<div class="trust-cell"><span class="t-val">${totalTips}+</span><span class="t-lbl">${t('trust_tips')}</span></div>` : ""}
+    ${winRate   != null ? `<div class="trust-cell"><span class="t-val">${winRate}%</span><span class="t-lbl">${t('trust_winrate')}</span></div>` : ""}
+    ${vipUsers  != null ? `<div class="trust-cell"><span class="t-val">${vipUsers}+</span><span class="t-lbl">${t('trust_vipusers')}</span></div>` : ""}
   `;
 }
 
@@ -1498,6 +2111,8 @@ function startTrustStatsListener() {
 }
 
 async function initApp() {
+  applyStaticTranslations();
+  updateThemeBtn();
   await ensureAnonAuth();
   startBlockedWatcher();
   startDeviceResetWatcher();
@@ -1510,8 +2125,10 @@ async function initApp() {
   startCountdownRefresh();
   startTrustStatsListener();
   initVipCode();
-  trackVisit();
+  await trackVisit();
   startVisitorHeartbeat();
-  showIdentityModalIfNeeded();
+  updateAccountUI();
+  showAuthModalIfNeeded();
+  appInitialized = true;
 }
 initApp();
