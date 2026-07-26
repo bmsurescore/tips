@@ -88,6 +88,7 @@ const LANG_STRINGS = {
     other_matches: "MECHI NYINGINE",
 
     badge_won: "✅ USHINDI", badge_lost: "❌ IMEPOTEA", badge_vip_locked: "🔒 VIP", badge_pending: "⏳ INASUBIRI",
+    badge_void: "➗ IMEREJESHWA",
     tip_premium: "🔒 Premium Tip",
     lock_reveal: "🔒 FUNGUA KUONA",
     lost_flag: "● Imepoteza",
@@ -233,6 +234,7 @@ const LANG_STRINGS = {
     other_matches: "OTHER MATCHES",
 
     badge_won: "✅ WON", badge_lost: "❌ LOST", badge_vip_locked: "🔒 VIP", badge_pending: "⏳ PENDING",
+    badge_void: "➗ VOID",
     tip_premium: "🔒 Premium Tip",
     lock_reveal: "🔒 UNLOCK TO REVEAL",
     lost_flag: "● Lost",
@@ -294,7 +296,8 @@ const LANG_STRINGS = {
   }
 };
 
-let currentLang = localStorage.getItem("appLang") || "sw";
+/* CHANGED: default language is now "en" instead of "sw" */
+let currentLang = localStorage.getItem("appLang") || "en";
 
 function t(key, vars) {
   const dict = LANG_STRINGS[currentLang] || LANG_STRINGS.sw;
@@ -351,8 +354,10 @@ window.toggleLanguage = function() {
 /* ══════════════════════════════════════════════════════════
    THEME (LIGHT / DARK MODE)
    ══════════════════════════════════════════════════════════ */
-let currentTheme = localStorage.getItem("appTheme") ||
-  (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+/* CHANGED: default theme is now always "dark" instead of following
+   the device's prefers-color-scheme. A user who already picked a
+   theme keeps it (localStorage still wins). */
+let currentTheme = localStorage.getItem("appTheme") || "dark";
 
 function updateThemeBtn() {
   const btn = document.getElementById("themeBtn");
@@ -417,13 +422,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/fireba
 import {
   getFirestore, collection, query, where, limit,
   onSnapshot, doc, getDoc, getDocs, setDoc, updateDoc,
-  serverTimestamp, increment
+  serverTimestamp, increment, runTransaction
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+/* CHANGED: removed signInAnonymously, linkWithCredential, EmailAuthProvider —
+   anonymous auth is no longer used anywhere in this app. Every user must
+   sign up or log in with email/password before using the app at all. */
 import {
-  getAuth, signInAnonymously, onAuthStateChanged,
+  getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, updateProfile, sendPasswordResetEmail,
-  linkWithCredential, EmailAuthProvider
+  signOut, updateProfile, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -555,12 +562,13 @@ function updateDateHeading() {
   document.getElementById("title").innerText = `${label} — ${weekday}, ${date}`;
 }
 
-let currentUid  = null;
-let currentUser = null;
-let isGuestAccount = true;
+/* ══════════════════════════════════════════════════════════
+   AUTH (mandatory sign-up / login — no anonymous auth)
+   ══════════════════════════════════════════════════════════ */
+let currentUid     = null;
+let currentUser    = null;
+let isGuestAccount = true;   // true whenever there is no signed-in user
 let appInitialized = false;
-let authListenerStarted = false;
-let authReadyResolve = null;
 
 function initAuthListener() {
   onAuthStateChanged(auth, async (user) => {
@@ -568,35 +576,35 @@ function initAuthListener() {
       const isNewSession = currentUid !== user.uid;
       currentUid     = user.uid;
       currentUser    = user;
-      isGuestAccount = user.isAnonymous;
+      isGuestAccount = false;
 
-      if (authReadyResolve) { authReadyResolve(user.uid); authReadyResolve = null; }
-
+      document.getElementById("authModal").style.display = "none";
       updateAccountUI();
+      trySplashHide();
 
-      if (isNewSession && appInitialized) {
+      if (!appInitialized) {
+        await startAppForUser();
+      } else if (isNewSession) {
         await onUserChanged();
       }
     } else {
-      currentUid  = null;
-      currentUser = null;
-      try {
-        await signInAnonymously(auth);
-      } catch (e) {
-        console.error("Anonymous sign-in failed:", e.code, e.message);
-        if (authReadyResolve) { authReadyResolve(null); authReadyResolve = null; }
-      }
-    }
-  });
-}
+      // No signed-in user: no anonymous fallback anymore.
+      // The app stays gated behind the auth modal until the person
+      // signs up or logs in.
+      currentUid     = null;
+      currentUser    = null;
+      isGuestAccount = true;
 
-function ensureAnonAuth() {
-  if (currentUid) return Promise.resolve(currentUid);
-  return new Promise((resolve) => {
-    authReadyResolve = resolve;
-    if (!authListenerStarted) {
-      authListenerStarted = true;
-      initAuthListener();
+      if (codeUnsub) { codeUnsub(); codeUnsub = null; }
+      if (blockedUnsub) { blockedUnsub(); blockedUnsub = null; }
+      if (deviceResetUnsub) { deviceResetUnsub(); deviceResetUnsub = null; }
+      if (autoLogoutTimer)   clearTimeout(autoLogoutTimer);
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      updateAccountUI();
+      document.getElementById("blockedScreen").style.display = "none";
+      document.getElementById("authModal").style.display = "flex";
+      trySplashHide();
     }
   });
 }
@@ -606,8 +614,8 @@ function getVisitorId() {
 }
 
 // Called whenever the signed-in identity changes AFTER the app has already
-// finished its first load (e.g. the person logs in, signs up, or logs out
-// mid-session). Re-runs everything that depends on "who is this device/account".
+// finished its first load (e.g. the person logs out and a different
+// account logs in on the same device/browser session).
 async function onUserChanged() {
   document.getElementById("vipRequestCard")?.remove();
   vipUnlocked   = false;
@@ -621,19 +629,10 @@ async function onUserChanged() {
 
   if (currentVipCode) subscribeToCode(currentVipCode);
   else initVipCode();
-
-  showAuthModalIfNeeded();
 }
 
-// NOTE: We deliberately do NOT create/update an analytics_visitors record
-// for anonymous (guest) sessions. Every device gets signed in anonymously
-// on first load just so Firestore rules have a stable uid to work with —
-// that is an auth-layer implementation detail, not someone "using the app"
-// in a way we want to track. A person only becomes a trackable "visitor"
-// once they've actually created an account or logged in (isGuestAccount
-// === false). This keeps analytics_visitors (and the Admin Panel's
-// Visitors / VIP Users tabs) limited to real, identifiable users instead
-// of filling up with anonymous device sessions that have no name or email.
+// Every visitor row in analytics_visitors now always belongs to a real,
+// identifiable account (name/email), since anonymous auth no longer exists.
 async function trackVisit() {
   try {
     if (isGuestAccount) return;
@@ -642,8 +641,8 @@ async function trackVisit() {
     const ref  = doc(db, "analytics_visitors", visitorId);
     const snap = await getDoc(ref).catch(() => null);
     const nowISO = now().toISOString();
-    const name  = (currentUser && !currentUser.isAnonymous) ? (currentUser.displayName || null) : null;
-    const email = (currentUser && !currentUser.isAnonymous) ? (currentUser.email || null) : null;
+    const name  = currentUser ? (currentUser.displayName || null) : null;
+    const email = currentUser ? (currentUser.email || null) : null;
 
     if (snap && snap.exists()) {
       const data = snap.data();
@@ -653,6 +652,9 @@ async function trackVisit() {
         lastDate:   date,
         visits:     increment(1),
         daysActive: isNewDay ? increment(1) : increment(0),
+        // Backfill firstSeen for any older doc that never got one
+        // (e.g. created before this field existed) — self-heals the
+        // next time this person opens the app.
         ...(!data.firstSeen ? { firstSeen: data.lastSeen || nowISO } : {}),
         ...((name || email) ? { name, email } : {})
       }, { merge: true });
@@ -706,16 +708,6 @@ function translateAuthError(code) {
   return dict[code] || (currentLang === "en" ? "An error occurred, please try again." : "Hitilafu imetokea, tafadhali jaribu tena.");
 }
 
-function showAuthModalIfNeeded() {
-  const modal = document.getElementById("authModal");
-  if (!modal) return;
-  if (isGuestAccount) {
-    modal.style.display = "flex";
-  } else {
-    modal.style.display = "none";
-  }
-}
-
 window.setAuthMode = function(mode) {
   authMode = mode;
   document.getElementById("authTabLogin").classList.toggle("active", mode === "login");
@@ -724,6 +716,11 @@ window.setAuthMode = function(mode) {
   document.getElementById("authSubmitBtn").innerText = mode === "signup" ? t('btn_signup') : t('btn_login');
   document.getElementById("authModalSub").innerText = mode === "signup" ? t('auth_sub_signup') : t('auth_sub_login');
   document.getElementById("authMsg").innerText = "";
+  // Password managers need the right autocomplete hint for each mode,
+  // otherwise browsers offer to "update" the wrong saved credential
+  // (or none at all) when creating a brand-new account.
+  const passEl = document.getElementById("authPassword");
+  if (passEl) passEl.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
 };
 
 window.submitAuth = async function() {
@@ -767,16 +764,10 @@ window.submitAuth = async function() {
 
   try {
     if (authMode === "signup") {
-      if (currentUser && currentUser.isAnonymous) {
-        // Mtumiaji alikuwa anonymous — unganisha akaunti mpya kwenye
-        // UID ile ile ili VIP code, historia na notifications zibaki.
-        const credential = EmailAuthProvider.credential(email, password);
-        const result = await linkWithCredential(currentUser, credential);
-        if (name) await updateProfile(result.user, { displayName: name });
-      } else {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        if (name) await updateProfile(cred.user, { displayName: name });
-      }
+      // No anonymous account to link anymore — every sign-up creates a
+      // brand-new Firebase Auth user directly.
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      if (name) await updateProfile(cred.user, { displayName: name });
       document.getElementById("authModal").style.display = "none";
       addNotification(t('welcome_new_account', { name }), "👋");
     } else {
@@ -819,9 +810,9 @@ window.handleForgotPassword = async function() {
 window.logoutAccount = async function() {
   try {
     await signOut(auth);
-    localStorage.removeItem("authSkipped");
     closeAccountPanel();
     showToast(t('logout_success'));
+    // onAuthStateChanged will show the auth modal again automatically.
   } catch (e) {
     console.warn("Logout failed:", e.message);
   }
@@ -866,9 +857,6 @@ document.addEventListener("click", e => {
   }
 });
 
-// Heartbeat is likewise skipped for guest sessions — see trackVisit() note
-// above. There is nothing useful to "keep alive" in analytics_visitors for
-// a session that never got a record created in the first place.
 function startVisitorHeartbeat() {
   setInterval(async () => {
     try {
@@ -913,6 +901,12 @@ function startDeviceResetWatcher() {
     if (data.resetRequested !== true) return;
 
     try {
+      // A "device reset" is meant to fully kick the person off this
+      // device/browser — that has to include ending the Firebase Auth
+      // session, not just wiping localStorage/caches. Without this,
+      // the person stayed signed in as themselves after a "reset".
+      await signOut(auth).catch(() => {});
+
       localStorage.clear();
       sessionStorage.clear();
 
@@ -959,9 +953,15 @@ function renderNotifications() {
     countEl.classList.add("hidden");
     return;
   }
+  // SECURITY FIX: n.msg can contain match/team names that ultimately come
+  // from Firestore documents (matches_free / matches_vip). Those strings
+  // were previously interpolated straight into innerHTML, which is a
+  // stored-XSS hole — anyone able to write a match document with a name
+  // like `<img src=x onerror=...>` could run script in every viewer's
+  // browser. Escape the whole rendered message.
   list.innerHTML = notifications.slice(0, 8).map(n =>
-    `<div class="notif-item">${n.icon || "🔔"} ${n.msg}<br>
-     <span style="font-size:9px;opacity:.4;font-family:'JetBrains Mono',monospace;">${n.time}</span></div>`
+    `<div class="notif-item">${escapeHtml(n.icon || "🔔")} ${escapeHtml(n.msg)}<br>
+     <span style="font-size:9px;opacity:.4;font-family:'JetBrains Mono',monospace;">${escapeHtml(n.time)}</span></div>`
   ).join("");
   countEl.innerText = Math.min(notifications.length, 9);
   countEl.classList.remove("hidden");
@@ -1245,35 +1245,53 @@ window.unlockVipCode = async function() {
       msgEl.innerText = t('code_invalid');
     } else {
       const codeDoc = snap.docs[0];
-      const data    = codeDoc.data();
-      const n       = now();
-      const exp     = data.expiry ? new Date(data.expiry + "T23:59:59") : null;
       const myId    = getVisitorId();
+      const n       = now();
 
-      if (!data.active) {
-        msgEl.style.color = "var(--coral)";
-        msgEl.innerText = t('code_disabled');
-      } else if (!exp || n > exp) {
-        msgEl.style.color = "var(--coral)";
-        msgEl.innerText = t('code_expired');
-      } else if (data.redeemedBy && data.redeemedBy !== myId) {
-        msgEl.style.color = "var(--coral)";
-        msgEl.innerText = t('code_in_use');
-      } else {
-        try {
+      // SECURITY FIX: the old flow read the code, checked its fields in
+      // JS, then wrote `redeemedBy` in a *separate* call. Two people
+      // entering the same unused code within the same moment could both
+      // pass the "is it free?" check before either write landed, letting
+      // both claim it. A Firestore transaction makes the read + claim
+      // atomic, so only the first caller to reach the transaction wins.
+      let outcome;
+      try {
+        outcome = await runTransaction(db, async (tx) => {
+          const freshSnap = await tx.get(codeDoc.ref);
+          if (!freshSnap.exists()) return { status: "invalid" };
+          const data = freshSnap.data();
+          const exp  = data.expiry ? new Date(data.expiry + "T23:59:59") : null;
+
+          if (!data.active) return { status: "disabled" };
+          if (!exp || n > exp) return { status: "expired" };
+          if (data.redeemedBy && data.redeemedBy !== myId) return { status: "in_use" };
+
           if (!data.redeemedBy) {
-            await updateDoc(codeDoc.ref, { redeemedBy: myId, redeemedAt: n.toISOString() });
+            tx.update(codeDoc.ref, { redeemedBy: myId, redeemedAt: n.toISOString() });
           }
-          localStorage.setItem("vipCode", code);
-          currentVipCode = code;
-          msgEl.style.color = "var(--pitch)";
-          msgEl.innerText = t('code_accepted');
-          subscribeToCode(code);
-        } catch (claimErr) {
-          console.error("claim failed:", claimErr.code, claimErr.message);
-          msgEl.style.color = "var(--coral)";
-          msgEl.innerText = t('code_claimed');
-        }
+          return { status: "ok" };
+        });
+      } catch (txErr) {
+        console.error("claim transaction failed:", txErr.code, txErr.message);
+        outcome = { status: "claim_error", message: txErr.message };
+      }
+
+      if (outcome.status === "disabled") {
+        msgEl.style.color = "var(--coral)"; msgEl.innerText = t('code_disabled');
+      } else if (outcome.status === "expired") {
+        msgEl.style.color = "var(--coral)"; msgEl.innerText = t('code_expired');
+      } else if (outcome.status === "in_use") {
+        msgEl.style.color = "var(--coral)"; msgEl.innerText = t('code_in_use');
+      } else if (outcome.status === "invalid") {
+        msgEl.style.color = "var(--coral)"; msgEl.innerText = t('code_invalid');
+      } else if (outcome.status === "claim_error") {
+        msgEl.style.color = "var(--coral)"; msgEl.innerText = t('code_claimed');
+      } else {
+        localStorage.setItem("vipCode", code);
+        currentVipCode = code;
+        msgEl.style.color = "var(--pitch)";
+        msgEl.innerText = t('code_accepted');
+        subscribeToCode(code);
       }
     }
   } catch (e) {
@@ -1461,8 +1479,8 @@ function evalAtomic(tip, home, away) {
   if (tip === "1X") return home >= away ? "win" : "lost";
   if (tip === "X2") return away >= home ? "win" : "lost";
   if (tip === "12") return home !== away ? "win" : "lost";
-  if (tip === "DNB HOME") return home > away ? "win" : home === away ? "pending" : "lost";
-  if (tip === "DNB AWAY") return away > home ? "win" : home === away ? "pending" : "lost";
+  if (tip === "DNB HOME") return home > away ? "win" : home === away ? "void" : "lost";
+  if (tip === "DNB AWAY") return away > home ? "win" : home === away ? "void" : "lost";
   if (tip.includes("BTTS") || tip.includes("BOTH")) {
     const both = home > 0 && away > 0;
     if (tip.includes("YES")) return both ? "win" : "lost";
@@ -1496,7 +1514,11 @@ function evalAtomic(tip, home, away) {
     if (isNaN(line)) return "pending";
     const diff = tip.includes("AWAY") ? (away - home) : (home - away);
     const adj = diff + line;
-    return adj > 0 ? "win" : adj === 0 ? "pending" : "lost";
+    // FIX: adj === 0 on a *finished* match is an Asian Handicap push
+    // (stake refunded) — it is a final, settled outcome, not a match
+    // still "pending". Reporting it as "pending" made the UI show a
+    // countdown / kickoff badge for a game that had already ended.
+    return adj > 0 ? "win" : adj === 0 ? "void" : "lost";
   }
   if (/^\d+-\d+$/.test(tip)) return tip === `${home}-${away}` ? "win" : "lost";
   return null;
@@ -1505,6 +1527,11 @@ function evalAtomic(tip, home, away) {
 function combineStatuses(list) {
   if (list.some(s => s === "lost")) return "lost";
   if (list.some(s => s === "pending" || s === null)) return "pending";
+  // A void/push leg neither wins nor loses a combo on its own — treat it
+  // as neutral and judge the combo on its remaining legs.
+  const decisive = list.filter(s => s !== "void");
+  if (decisive.length === 0) return "void";
+  if (decisive.some(s => s === "lost")) return "lost";
   return "win";
 }
 
@@ -1626,6 +1653,7 @@ function buildStatusBadge(status, locked, countdown) {
   if (locked)               return `<span class="badge locked">${t('badge_vip_locked')}</span>`;
   if (status === "win")     return `<span class="badge win">${t('badge_won')}</span>`;
   if (status === "lost")    return `<span class="badge lost">${t('badge_lost')}</span>`;
+  if (status === "void")    return `<span class="badge pending">${t('badge_void')}</span>`;
   return `<span class="badge pending match-countdown">${countdown}</span>`;
 }
 
@@ -1640,6 +1668,7 @@ function buildTipNote(m) {
 function buildStatusIcon(status) {
   if (status === "win")  return `<span class="status-icon win">✓</span>`;
   if (status === "lost") return `<span class="status-icon lost">✗</span>`;
+  if (status === "void") return `<span class="status-icon pending">➗</span>`;
   return `<span class="status-icon pending">📅</span>`;
 }
 
@@ -1797,16 +1826,24 @@ function processTodayMatches() {
 
     const styledHtml = html.replace('class="match-card', `style="--i:${idx}" class="match-card`);
 
+    // FIX: "Total odds" used to multiply in the odd of every *pending*
+    // (not-yet-decided) leg too, alongside settled wins — inflating the
+    // stat with games that haven't finished. It now only reflects legs
+    // that actually won, and void/push legs are excluded entirely from
+    // both the win/lost counters and the odds product, since a push
+    // neither wins nor loses and refunds the stake.
     if (isFree) {
       freeBuilt.push({ m, styledHtml, status });
-      if (status === "win")       { stats.winF++; stats.oddsF *= oddVal; if(prevFreeWin) freeStreakCount++; prevFreeWin=true; }
-      else if (status === "lost") { stats.lostF++; prevFreeWin=false; freeStreakCount=0; }
-      else                        { stats.pendingF++; stats.oddsF *= oddVal; }
+      if (status === "win")        { stats.winF++; stats.oddsF *= oddVal; if(prevFreeWin) freeStreakCount++; prevFreeWin=true; }
+      else if (status === "lost")  { stats.lostF++; prevFreeWin=false; freeStreakCount=0; }
+      else if (status === "void")  { /* refunded — doesn't count toward win/lost or odds */ }
+      else                         { stats.pendingF++; }
     } else {
       vipBuilt.push({ m, styledHtml, status });
-      if (status === "win")       { stats.winV++; stats.oddsV *= oddVal; if(prevVipWin) vipStreakCount++; prevVipWin=true; }
-      else if (status === "lost") { stats.lostV++; prevVipWin=false; vipStreakCount=0; }
-      else                        { stats.pendingV++; stats.oddsV *= oddVal; }
+      if (status === "win")        { stats.winV++; stats.oddsV *= oddVal; if(prevVipWin) vipStreakCount++; prevVipWin=true; }
+      else if (status === "lost")  { stats.lostV++; prevVipWin=false; vipStreakCount=0; }
+      else if (status === "void")  { /* refunded — doesn't count toward win/lost or odds */ }
+      else                         { stats.pendingV++; }
     }
   });
 
@@ -1857,14 +1894,14 @@ function processTodayMatches() {
   document.getElementById("sWinF").innerText  = stats.winF;
   document.getElementById("sLostF").innerText = stats.lostF;
   document.getElementById("sRateF").innerText = fRate + "%";
-  document.getElementById("sOddsF").innerText = (fTotal > 0 ? stats.oddsF : 0).toFixed(2);
+  document.getElementById("sOddsF").innerText = (stats.winF > 0 ? stats.oddsF : 0).toFixed(2);
   document.getElementById("sProgLabelF").innerText = `${stats.winF} / ${fDone}`;
   setTimeout(() => { document.getElementById("sProgBarF").style.width = fRate + "%"; }, 300);
 
   document.getElementById("sWinV").innerText  = stats.winV;
   document.getElementById("sLostV").innerText = stats.lostV;
   document.getElementById("sRateV").innerText = vRate + "%";
-  document.getElementById("sOddsV").innerText = (vTotal > 0 ? stats.oddsV : 0).toFixed(2);
+  document.getElementById("sOddsV").innerText = (stats.winV > 0 ? stats.oddsV : 0).toFixed(2);
   document.getElementById("sProgLabelV").innerText = `${stats.winV} / ${vDone}`;
   setTimeout(() => { document.getElementById("sProgBarV").style.width = vRate + "%"; }, 300);
 
@@ -1972,6 +2009,7 @@ function buildHistoryCard(m, isFree) {
 
   const badge = status === "win" ? `<span class="badge win">${t('badge_won')}</span>`
     : status === "lost" ? `<span class="badge lost">${t('badge_lost')}</span>`
+    : status === "void" ? `<span class="badge pending">${t('badge_void')}</span>`
     : `<span class="badge pending">${t('badge_pending')}</span>`;
 
   return `
@@ -2110,15 +2148,25 @@ function startTrustStatsListener() {
   }, () => renderTrustStrip({}));
 }
 
+/* ══════════════════════════════════════════════════════════
+   APP BOOTSTRAP
+   ══════════════════════════════════════════════════════════ */
+// initApp() now only wires up static UI + the auth listener.
+// All data listeners / trackVisit / heartbeat are deferred until
+// a real signed-in user exists (see startAppForUser below), since
+// there is no more anonymous fallback to fall back on.
 async function initApp() {
   applyStaticTranslations();
   updateThemeBtn();
-  await ensureAnonAuth();
-  startBlockedWatcher();
-  startDeviceResetWatcher();
+  initAuthListener();
+}
+
+async function startAppForUser() {
   await syncServerTime();
   computeDateFromNow();
   startDateRolloverWatcher();
+  startBlockedWatcher();
+  startDeviceResetWatcher();
   startFreeMatchesListener();
   startVipMatchesListener();
   startHistoryListeners();
@@ -2128,7 +2176,7 @@ async function initApp() {
   await trackVisit();
   startVisitorHeartbeat();
   updateAccountUI();
-  showAuthModalIfNeeded();
   appInitialized = true;
 }
+
 initApp();
