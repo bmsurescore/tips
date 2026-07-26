@@ -633,6 +633,19 @@ async function onUserChanged() {
 
 // Every visitor row in analytics_visitors now always belongs to a real,
 // identifiable account (name/email), since anonymous auth no longer exists.
+//
+// FIX: the initial setDoc used to include `vipUnlockedEver: false`. The
+// Firestore `create` rule for analytics_visitors only allows the keys
+// ['firstSeen','lastSeen','lastDate','visits','daysActive','name','email']
+// on create — `vipUnlockedEver` is deliberately NOT in that list (it can
+// only be flipped true later through a narrow, single-field `update`).
+// Including it here made the very first setDoc for a brand-new user get
+// rejected with permission-denied, silently (caught below), so `name`,
+// `email`, and `firstSeen` never got written. A few seconds later the
+// heartbeat's setDoc({ lastSeen }, merge:true) — which only touches an
+// allowed field — succeeded and created a bare document with no name/
+// email/firstSeen, which is what showed up in the Admin Panel. Removing
+// vipUnlockedEver from this initial write fixes it for all new signups.
 async function trackVisit() {
   try {
     if (isGuestAccount) return;
@@ -660,12 +673,11 @@ async function trackVisit() {
       }, { merge: true });
     } else {
       await setDoc(ref, {
-        firstSeen:       nowISO,
-        lastSeen:        nowISO,
-        lastDate:        date,
-        visits:          1,
-        daysActive:      1,
-        vipUnlockedEver: false,
+        firstSeen:  nowISO,
+        lastSeen:   nowISO,
+        lastDate:   date,
+        visits:     1,
+        daysActive: 1,
         name,
         email
       }, { merge: true });
@@ -901,12 +913,13 @@ function startDeviceResetWatcher() {
     if (data.resetRequested !== true) return;
 
     try {
-      // A "device reset" is meant to fully kick the person off this
-      // device/browser — that has to include ending the Firebase Auth
-      // session, not just wiping localStorage/caches. Without this,
-      // the person stayed signed in as themselves after a "reset".
-      await signOut(auth).catch(() => {});
+      // Zima flag KWANZA, wakati bado una permission ya kufanya hivyo —
+      // (update rule inahitaji isSignedIn(), kwa hiyo hii lazima itokee
+      // KABLA ya signOut, la sivyo write inakataliwa kimya kimya na
+      // flag inabaki true milele, ikisababisha logout-loop).
+      await updateDoc(doc(db, "device_resets", myId), { resetRequested: false });
 
+      await signOut(auth).catch(() => {});
       localStorage.clear();
       sessionStorage.clear();
 
@@ -914,8 +927,6 @@ function startDeviceResetWatcher() {
         const keys = await caches.keys();
         await Promise.all(keys.map(k => caches.delete(k)));
       }
-
-      await updateDoc(doc(db, "device_resets", myId), { resetRequested: false });
 
       window.location.href = window.location.href.split("#")[0];
     } catch (e) {
