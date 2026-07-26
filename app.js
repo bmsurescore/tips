@@ -1837,23 +1837,24 @@ function processTodayMatches() {
 
     const styledHtml = html.replace('class="match-card', `style="--i:${idx}" class="match-card`);
 
-    // FIX: "Total odds" used to multiply in the odd of every *pending*
-    // (not-yet-decided) leg too, alongside settled wins — inflating the
-    // stat with games that haven't finished. It now only reflects legs
-    // that actually won, and void/push legs are excluded entirely from
-    // both the win/lost counters and the odds product, since a push
-    // neither wins nor loses and refunds the stake.
+    // "Jumla ya odds" / "Total odds" is now the product of the odds for
+    // ALL matches in the section (regardless of win/lost/pending status),
+    // not just the ones that have already won. Win/lost/void/pending are
+    // tracked purely as status counters and no longer gate whether a
+    // match's odd is multiplied in.
     if (isFree) {
       freeBuilt.push({ m, styledHtml, status });
-      if (status === "win")        { stats.winF++; stats.oddsF *= oddVal; if(prevFreeWin) freeStreakCount++; prevFreeWin=true; }
+      stats.oddsF *= oddVal;
+      if (status === "win")        { stats.winF++; if(prevFreeWin) freeStreakCount++; prevFreeWin=true; }
       else if (status === "lost")  { stats.lostF++; prevFreeWin=false; freeStreakCount=0; }
-      else if (status === "void")  { /* refunded — doesn't count toward win/lost or odds */ }
+      else if (status === "void")  { /* refunded — doesn't count toward win/lost */ }
       else                         { stats.pendingF++; }
     } else {
       vipBuilt.push({ m, styledHtml, status });
-      if (status === "win")        { stats.winV++; stats.oddsV *= oddVal; if(prevVipWin) vipStreakCount++; prevVipWin=true; }
+      stats.oddsV *= oddVal;
+      if (status === "win")        { stats.winV++; if(prevVipWin) vipStreakCount++; prevVipWin=true; }
       else if (status === "lost")  { stats.lostV++; prevVipWin=false; vipStreakCount=0; }
-      else if (status === "void")  { /* refunded — doesn't count toward win/lost or odds */ }
+      else if (status === "void")  { /* refunded — doesn't count toward win/lost */ }
       else                         { stats.pendingV++; }
     }
   });
@@ -1905,14 +1906,14 @@ function processTodayMatches() {
   document.getElementById("sWinF").innerText  = stats.winF;
   document.getElementById("sLostF").innerText = stats.lostF;
   document.getElementById("sRateF").innerText = fRate + "%";
-  document.getElementById("sOddsF").innerText = (stats.winF > 0 ? stats.oddsF : 0).toFixed(2);
+  document.getElementById("sOddsF").innerText = stats.oddsF.toFixed(2);
   document.getElementById("sProgLabelF").innerText = `${stats.winF} / ${fDone}`;
   setTimeout(() => { document.getElementById("sProgBarF").style.width = fRate + "%"; }, 300);
 
   document.getElementById("sWinV").innerText  = stats.winV;
   document.getElementById("sLostV").innerText = stats.lostV;
   document.getElementById("sRateV").innerText = vRate + "%";
-  document.getElementById("sOddsV").innerText = (stats.winV > 0 ? stats.oddsV : 0).toFixed(2);
+  document.getElementById("sOddsV").innerText = stats.oddsV.toFixed(2);
   document.getElementById("sProgLabelV").innerText = `${stats.winV} / ${vDone}`;
   setTimeout(() => { document.getElementById("sProgBarV").style.width = vRate + "%"; }, 300);
 
