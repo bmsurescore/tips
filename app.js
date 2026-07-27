@@ -1370,7 +1370,7 @@ function humanizeTip(tip, m) {
 function humanizeSingle(tRaw, home, away) {
   const L = {
     en: {
-      firstHalf: "1st Half: ", wins: n => `${n} Wins`, draw: "Draw",
+      firstHalf: "1st Half: ", secondHalf: "2nd Half: ", wins: n => `${n} Wins`, draw: "Draw",
       dcHome: n => `Double Chance (${n} or Draw)`, dc12: `Double Chance (${home} or ${away})`,
       dnb: n => `${n} Wins (Draw No Bet)`,
       bttsYes: "Both Teams to Score - Yes", bttsNo: "Both Teams to Score - No",
@@ -1382,9 +1382,10 @@ function humanizeSingle(tRaw, home, away) {
       goalsRange: (n, a, b) => `${n} Goals ${a}-${b}`, totalGoalsRange: (a,b) => `Total Goals ${a}-${b}`,
       handicap: (n, line) => `${n} Handicap (${line})`,
       correctScore: s => `Correct Score ${s}`,
+      handicap3w: (n, line, pickLabel) => `${n} Handicap ${line} → ${pickLabel}`,
     },
     sw: {
-      firstHalf: "Nusu ya Kwanza: ", wins: n => `${n} Anashinda`, draw: "Sare",
+      firstHalf: "Nusu ya Kwanza: ", secondHalf: "Nusu ya Pili: ", wins: n => `${n} Anashinda`, draw: "Sare",
       dcHome: n => `Nafasi Mbili (${n} au Sare)`, dc12: `Nafasi Mbili (${home} au ${away})`,
       dnb: n => `${n} Anashinda (Sare Haihesabiwi)`,
       bttsYes: "Timu Zote Kufunga - Ndiyo", bttsNo: "Timu Zote Kufunga - Hapana",
@@ -1396,15 +1397,31 @@ function humanizeSingle(tRaw, home, away) {
       goalsRange: (n, a, b) => `${n} Magoli ${a}-${b}`, totalGoalsRange: (a,b) => `Jumla ya Magoli ${a}-${b}`,
       handicap: (n, line) => `${n} Handicap (${line})`,
       correctScore: s => `Skoa Sahihi ${s}`,
+      handicap3w: (n, line, pickLabel) => `${n} Handicap ${line} → ${pickLabel}`,
     }
   };
   const lang = L[currentLang] || L.sw;
 
   let t = tRaw;
   let prefix = "";
+
+  // 3-Way Handicap tips: "3W HOME -2 1" / "3W AWAY +1 X" etc.
+  if (t.startsWith("3W")) {
+    const parts = t.split(" ");
+    const side  = parts[1]; // HOME | AWAY
+    const line  = parts[2]; // -2, -1, +1, +2 ...
+    const pick  = parts[3]; // 1 | X | 2
+    const pickMap = { "1": lang.wins(home), "X": lang.draw, "2": lang.wins(away) };
+    const sideName = side === "AWAY" ? away : home;
+    return lang.handicap3w(sideName, line, pickMap[pick] || pick);
+  }
+
   if (t.startsWith("HT ") || t.startsWith("1H ")) {
     prefix = lang.firstHalf;
     t = t.replace(/^(HT|1H)\s+/, "");
+  } else if (t.startsWith("2H ")) {
+    prefix = lang.secondHalf;
+    t = t.replace(/^2H\s+/, "");
   }
 
   const htft = t.match(/^(1|X|2)\s*\/\s*(1|X|2)$/);
@@ -1447,6 +1464,11 @@ function humanizeSingle(tRaw, home, away) {
     return prefix + lang.totalGoalsRange(r[1], r[2]);
   }
 
+  if (t.includes("AH")) {
+    const line = t.split(" ").pop();
+    return prefix + lang.handicap(t.includes("AWAY") ? away : home, line);
+  }
+
   if (t.includes("OVER"))  return prefix + lang.totalOver(t.split(" ").pop());
   if (t.includes("UNDER")) return prefix + lang.totalUnder(t.split(" ").pop());
   if (t === "ODD")  return prefix + lang.odd;
@@ -1455,11 +1477,6 @@ function humanizeSingle(tRaw, home, away) {
   if (t === "AWAY CLEAN SHEET") return prefix + lang.cleanSheet(away);
   if (t === "HOME WIN TO NIL") return prefix + lang.winToNil(home);
   if (t === "AWAY WIN TO NIL") return prefix + lang.winToNil(away);
-
-  if (t.includes("AH")) {
-    const line = t.split(" ").pop();
-    return prefix + lang.handicap(t.includes("AWAY") ? away : home, line);
-  }
 
   if (/^\d+-\d+$/.test(t)) return prefix + lang.correctScore(t);
 
@@ -1483,6 +1500,20 @@ function getHalves(m) {
 
 function evalAtomic(tip, home, away) {
   const total = home + away;
+
+  // 3-Way Handicap: "3W HOME -2 1" / "3W AWAY +1 X" — applies the line to
+  // one side, then judges the resulting 1/X/2 outcome against the pick.
+  if (tip.startsWith("3W")) {
+    const parts = tip.split(" ");
+    const side  = parts[1];
+    const line  = parseFloat(parts[2]);
+    const pick  = parts[3];
+    if (isNaN(line) || !pick) return "pending";
+    const adjHome = side === "AWAY" ? home : home + line;
+    const adjAway = side === "AWAY" ? away + line : away;
+    const outcome = adjHome > adjAway ? "1" : adjHome < adjAway ? "2" : "X";
+    return outcome === pick ? "win" : "lost";
+  }
 
   if (tip === "HOME" || tip === "1") return home > away ? "win" : "lost";
   if (tip === "AWAY" || tip === "2") return away > home ? "win" : "lost";
@@ -1591,12 +1622,24 @@ function getStatus(m) {
     return evalAtomic(inner, h1.home, h1.away) ?? "lost";
   }
 
+  // Second-half-only tips: "2H 1", "2H OVER 1.5", etc. Judged against
+  // the derived second-half score (h2), same way HT tips use h1.
+  if (tip.startsWith("2H ")) {
+    if (!h2) return "pending";
+    const inner = tip.replace(/^2H\s+/, "");
+    return evalAtomic(inner, h2.home, h2.away) ?? "lost";
+  }
+
   if (tip.includes(" & ")) {
     const legs = tip.split(" & ").map(s => s.trim());
     const results = legs.map(leg => {
       if (leg.startsWith("HT ") || leg.startsWith("1H ")) {
         if (!h1) return "pending";
         return evalAtomic(leg.replace(/^(HT|1H)\s+/, ""), h1.home, h1.away) ?? "lost";
+      }
+      if (leg.startsWith("2H ")) {
+        if (!h2) return "pending";
+        return evalAtomic(leg.replace(/^2H\s+/, ""), h2.home, h2.away) ?? "lost";
       }
       return evalAtomic(leg.replace(/^DC\s+/, ""), home, away) ?? "lost";
     });
