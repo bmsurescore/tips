@@ -857,6 +857,29 @@ body{
 .auth-link.auth-skip{color:var(--slate-dim);}
 .auth-link.auth-skip:hover{color:var(--coral);}
 
+/* ══════════════════ GOOGLE SIGN-IN ══════════════════ */
+.auth-divider{
+  display:flex;align-items:center;gap:10px;margin:14px 0;
+}
+.auth-divider::before,.auth-divider::after{
+  content:'';flex:1;height:1px;background:var(--line);
+}
+.auth-divider span{
+  font-size:10px;opacity:.4;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--slate);font-family:'JetBrains Mono',monospace;flex-shrink:0;
+}
+.google-signin-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:12px;border-radius:var(--radius-md);border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink);cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.01em;
+  transition:border-color .15s, background .15s, box-shadow .15s;
+}
+.google-signin-btn:hover{border-color:var(--slate-dim);background:var(--surface-3);box-shadow:var(--shadow-sm);}
+.google-signin-btn:active{transform:scale(.98);}
+.google-signin-btn:disabled{opacity:.5;cursor:not-allowed;}
+.google-signin-btn svg{flex-shrink:0;}
+
 /* ══════════════════ IDENTITY / WELCOME MODAL (legacy, kept for compatibility) ══════════════════ */
 #identityModal .popup-box{max-width:380px;text-align:left;}
 #identityModal .id-crown{font-size:26px;margin-bottom:10px;text-align:center;opacity:.9;}
@@ -903,3 +926,40 @@ button:focus-visible, .plan-card:focus-visible, .icon-btn:focus-visible, input:f
   from{ opacity:0; transform:translateY(3px); }
   to{ opacity:1; transform:translateY(0); }
 }
+/* ══════════════════ BOOKING CODES (BetPawa / SportyBet) ══════════════════ */
+.booking-codes-wrap{
+  padding:11px 14px 14px;
+  background:var(--surface-2);
+  border-top:1px solid var(--line-soft);
+}
+.league-group .booking-codes-wrap{background:var(--surface-3);}
+.bc-label{
+  font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--slate);opacity:.7;margin-bottom:8px;
+  font-family:'JetBrains Mono',monospace;
+}
+.booking-codes{display:flex;flex-wrap:wrap;gap:8px;}
+.booking-code-item{
+  display:flex;align-items:center;gap:8px;flex:1;min-width:140px;
+  padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--line);
+  background:var(--surface);cursor:pointer;text-align:left;
+  transition:transform .12s ease, border-color .15s ease, box-shadow .15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.booking-code-item:hover{box-shadow:var(--shadow-sm);}
+.booking-code-item:active{transform:scale(.96);}
+.booking-code-item.betpawa{border-color:rgba(90,196,80,.35);background:rgba(90,196,80,.08);}
+.booking-code-item.sportybet{border-color:rgba(228,3,46,.30);background:rgba(228,3,46,.07);}
+.bc-platform{
+  font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  flex-shrink:0;font-family:'JetBrains Mono',monospace;
+}
+.booking-code-item.betpawa .bc-platform{color:#4CAF50;}
+.booking-code-item.sportybet .bc-platform{color:#E4032E;}
+.bc-code{
+  flex:1;font-size:clamp(13px,2.8vw,15px);font-weight:700;color:var(--ink);
+  letter-spacing:.03em;font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.bc-copy-icon{font-size:12px;opacity:.5;flex-shrink:0;}
+.booking-code-item:hover .bc-copy-icon{opacity:.95;}
