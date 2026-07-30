@@ -444,12 +444,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyDbfaPPAFdOSJm09OxQeMqQ-UsLkQzsdxk",
-  authDomain:        "vip-app-b82d3.firebaseapp.com",
-  projectId:         "vip-app-b82d3",
-  storageBucket:     "vip-app-b82d3.firebasestorage.app",
-  messagingSenderId: "412845975498",
-  appId:             "1:412845975498:web:e577440f7ae87de7b4d133"
+  apiKey:            "AIzaSyDyL6CgZVuIprC7izQ4arOAcVL9m97GUrA",
+  authDomain:        "bm-surescore.firebaseapp.com",
+  projectId:         "bm-surescore",
+  storageBucket:     "bm-surescore.firebasestorage.app",
+  messagingSenderId: "642404428353",
+  appId:             "1:642404428353:web:3b054b81c862ba2fd4b4c0",
+  measurementId:     "G-1M0H58GZ95"
 };
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
