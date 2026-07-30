@@ -151,6 +151,9 @@ const LANG_STRINGS = {
 
     tap_pricing: "Bofya Kuona Bei",
     premium_available: "tips {n} za premium zinapatikana — bofya kufungua",
+
+    bc_label: "Booking Code",
+    code_copied: "Umenakili msimbo ✅",
   },
   en: {
     nav_free: "Free", nav_vip: "VIP", nav_history: "History",
@@ -301,6 +304,9 @@ const LANG_STRINGS = {
 
     tap_pricing: "Tap to View Pricing",
     premium_available: "{n} premium predictions available — tap to unlock",
+
+    bc_label: "Booking Code",
+    code_copied: "Code copied ✅",
   }
 };
 
@@ -1797,6 +1803,43 @@ function buildStatusIcon(status) {
   return `<span class="status-icon pending">📅</span>`;
 }
 
+function buildBookingCodes(m) {
+  const items = [];
+  if (m.betpawaCode) {
+    items.push(`
+      <div class="booking-code-item betpawa" data-bc-code="${escapeHtml(m.betpawaCode)}">
+        <span class="bc-platform">BetPawa</span>
+        <span class="bc-code">${escapeHtml(m.betpawaCode)}</span>
+        <span class="bc-copy-icon">📋</span>
+      </div>`);
+  }
+  if (m.sportybetCode) {
+    items.push(`
+      <div class="booking-code-item sportybet" data-bc-code="${escapeHtml(m.sportybetCode)}">
+        <span class="bc-platform">SportyBet</span>
+        <span class="bc-code">${escapeHtml(m.sportybetCode)}</span>
+        <span class="bc-copy-icon">📋</span>
+      </div>`);
+  }
+  if (items.length === 0) return "";
+  return `
+    <div class="booking-codes-wrap">
+      <div class="bc-label">${t('bc_label')}</div>
+      <div class="booking-codes">${items.join("")}</div>
+    </div>`;
+}
+
+document.addEventListener("click", e => {
+  const item = e.target.closest(".booking-code-item");
+  if (!item) return;
+  const code = item.dataset.bcCode;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    showToast(t('code_copied'));
+    navigator.vibrate?.([10]);
+  }).catch(() => showToast(t('clipboard_error')));
+});
+
 function buildRow(m, matchTime, isFree) {
   const status    = getStatus(m);
   const countdown = getCountdownLabel(matchTime);
@@ -1838,6 +1881,10 @@ function buildRow(m, matchTime, isFree) {
   }
 
   const cardStateClass = locked ? "" : status === "win" ? "is-win" : status === "lost" ? "is-lost" : "";
+  // CHANGED: booking codes (BetPawa / SportyBet) are no longer rendered
+  // on every single match card. They now show ONCE per section (Free /
+  // VIP / History day) via buildSectionBookingBanner(), so this stays empty.
+  const codesHTML = "";
 
   return {
     html: `
@@ -1849,6 +1896,7 @@ function buildRow(m, matchTime, isFree) {
         <div>${tipHTML}</div>
         ${oddHTML}
       </div>
+      ${codesHTML}
     </div>`,
     status,
     oddVal
@@ -1873,6 +1921,58 @@ function updateTicker(rows, globalStreak) {
     `<b>BM SURESCORE</b> · ${t('ticker_brand')}`
   ];
   track.innerHTML = parts.join("&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;").repeat(2);
+}
+
+// Booking codes (BetPawa / SportyBet) are now managed from a dedicated
+// "Booking Codes" panel in the admin app, not attached to individual
+// matches. They live in a single Firestore doc: _meta/bookingCodes,
+// with separate values for the Free section and the VIP section.
+let bookingCodes = { free: null, vip: null };
+
+function startBookingCodesListener() {
+  onSnapshot(doc(db, "_meta", "bookingCodes"), snap => {
+    if (!snap.exists()) {
+      bookingCodes = { free: null, vip: null };
+    } else {
+      const data = snap.data() || {};
+      bookingCodes.free = (data.freeBetpawaCode || data.freeSportybetCode)
+        ? { betpawaCode: data.freeBetpawaCode || "", sportybetCode: data.freeSportybetCode || "" }
+        : null;
+      bookingCodes.vip = (data.vipBetpawaCode || data.vipSportybetCode)
+        ? { betpawaCode: data.vipBetpawaCode || "", sportybetCode: data.vipSportybetCode || "" }
+        : null;
+    }
+    processTodayMatches();
+  }, () => { /* ignore transient read errors */ });
+}
+
+// Renders a single booking-code banner for a section (Free / VIP).
+// Returns "" if there's nothing to show.
+function buildSectionBookingBanner(codes) {
+  if (!codes) return "";
+  const items = [];
+  if (codes.betpawaCode) {
+    items.push(`
+      <div class="booking-code-item betpawa" data-bc-code="${escapeHtml(codes.betpawaCode)}">
+        <span class="bc-platform">BetPawa</span>
+        <span class="bc-code">${escapeHtml(codes.betpawaCode)}</span>
+        <span class="bc-copy-icon">📋</span>
+      </div>`);
+  }
+  if (codes.sportybetCode) {
+    items.push(`
+      <div class="booking-code-item sportybet" data-bc-code="${escapeHtml(codes.sportybetCode)}">
+        <span class="bc-platform">SportyBet</span>
+        <span class="bc-code">${escapeHtml(codes.sportybetCode)}</span>
+        <span class="bc-copy-icon">📋</span>
+      </div>`);
+  }
+  if (items.length === 0) return "";
+  return `
+    <div class="section-booking-banner">
+      <div class="sbc-label">${t('bc_label')}</div>
+      <div class="booking-codes">${items.join("")}</div>
+    </div>`;
 }
 
 function renderGroupedByLeague(builtRows, isVip) {
@@ -1984,8 +2084,10 @@ function processTodayMatches() {
   const emptyFreeEl = document.getElementById("emptyFree");
   const emptyVipEl  = document.getElementById("emptyVip");
 
-  freeDataEl.innerHTML = renderGroupedByLeague(freeBuilt, false);
-  vipDataEl.innerHTML  = renderGroupedByLeague(vipBuilt, true);
+  // Booking codes shown ONCE per section (not per match card) — set by
+  // the admin's dedicated Booking Codes panel, not per-match.
+  freeDataEl.innerHTML = buildSectionBookingBanner(bookingCodes.free) + renderGroupedByLeague(freeBuilt, false);
+  vipDataEl.innerHTML  = buildSectionBookingBanner(bookingCodes.vip)  + renderGroupedByLeague(vipBuilt, true);
 
   if (fTotal > 0) {
     freeDataEl.style.display = "";
@@ -2179,6 +2281,8 @@ function renderHistoryPage(type) {
       </div>`;
   }).join("");
 
+  // Booking codes are intentionally NOT shown in History — only on the
+  // live Free/VIP sections, so people can copy today's code.
   renderWithFade(targetEl, `
     <div class="hist-page-label">${t('hist_page_label', { a: clamped + 1, b: dates.length })}</div>
     <div class="date-group">📅 ${d}</div>
@@ -2299,6 +2403,7 @@ async function startAppForUser() {
   startHistoryListeners();
   startCountdownRefresh();
   startTrustStatsListener();
+  startBookingCodesListener();
   initVipCode();
   await trackVisit();
   startVisitorHeartbeat();
