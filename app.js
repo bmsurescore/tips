@@ -55,6 +55,10 @@ const LANG_STRINGS = {
     btn_logging_in: "INAINGIA…", btn_signing_up: "INAJISAJILI…",
     forgot_password: "Umesahau nywila?",
 
+    google_signin: "Endelea na Google",
+    auth_or: "AU",
+    google_signing_in: "INAUNGANISHA…",
+
     blocked_title: "Umezuiwa Kuingia",
     blocked_msg: "Akaunti yako imezuiwa kutumia BM SURESCORE. Kama unadhani hii ni kosa, wasiliana nasi kupitia WhatsApp.",
     blocked_btn: "💬 Wasiliana WhatsApp",
@@ -200,6 +204,10 @@ const LANG_STRINGS = {
     btn_login: "Log In ➜", btn_signup: "Sign Up ➜",
     btn_logging_in: "LOGGING IN…", btn_signing_up: "SIGNING UP…",
     forgot_password: "Forgot password?",
+
+    google_signin: "Continue with Google",
+    auth_or: "OR",
+    google_signing_in: "CONNECTING…",
 
     blocked_title: "Access Blocked",
     blocked_msg: "Your account has been blocked from accessing BM SURESCORE. If you think this is a mistake, contact us on WhatsApp.",
@@ -426,11 +434,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 /* CHANGED: removed signInAnonymously, linkWithCredential, EmailAuthProvider —
    anonymous auth is no longer used anywhere in this app. Every user must
-   sign up or log in with email/password before using the app at all. */
+   sign up or log in (email/password OR Google) before using the app at all. */
 import {
   getAuth, onAuthStateChanged,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, updateProfile, sendPasswordResetEmail
+  signOut, updateProfile, sendPasswordResetEmail,
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -444,6 +454,7 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
 
@@ -701,7 +712,10 @@ function translateAuthError(code) {
       "auth/wrong-password":       "Nywila si sahihi, jaribu tena.",
       "auth/invalid-credential":   "Barua pepe au nywila si sahihi.",
       "auth/too-many-requests":    "Majaribio mengi kwa muda mfupi. Tafadhali subiri kidogo kisha jaribu tena.",
-      "auth/network-request-failed": "Tatizo la mtandao. Angalia intaneti yako na ujaribu tena."
+      "auth/network-request-failed": "Tatizo la mtandao. Angalia intaneti yako na ujaribu tena.",
+      "auth/popup-blocked":        "Kivinjari kimezuia dirisha ibukizi. Ruhusu popups kisha jaribu tena.",
+      "auth/cancelled-popup-request": "Ombi lililopita la Google halijakamilika. Jaribu tena.",
+      "auth/account-exists-with-different-credential": "Barua pepe hii tayari ina akaunti iliyoundwa kwa njia tofauti (mfano nywila). Jaribu kuingia kwa njia hiyo."
     },
     en: {
       "auth/credential-already-in-use": "This email already has another account. Try logging in instead.",
@@ -713,7 +727,10 @@ function translateAuthError(code) {
       "auth/wrong-password":       "Incorrect password, please try again.",
       "auth/invalid-credential":   "Incorrect email or password.",
       "auth/too-many-requests":    "Too many attempts in a short time. Please wait a moment and try again.",
-      "auth/network-request-failed": "Network problem. Check your connection and try again."
+      "auth/network-request-failed": "Network problem. Check your connection and try again.",
+      "auth/popup-blocked":        "Your browser blocked the sign-in popup. Allow popups and try again.",
+      "auth/cancelled-popup-request": "The previous Google sign-in request wasn't finished. Please try again.",
+      "auth/account-exists-with-different-credential": "This email already has an account created a different way (e.g. password). Try logging in that way instead."
     }
   };
   const dict = map[currentLang] || map.sw;
@@ -796,6 +813,59 @@ window.submitAuth = async function() {
   btn.disabled = false;
   btn.innerText = authMode === "signup" ? t('btn_signup') : t('btn_login');
 };
+
+// Google Sign-In. Works for both login and signup — Firebase creates the
+// account automatically the first time a given Google account is used,
+// and simply signs the person back in on every later visit.
+window.signInWithGoogle = async function() {
+  const msgEl = document.getElementById("authMsg");
+  const btn   = document.getElementById("googleSignInBtn");
+
+  msgEl.style.color = "var(--pitch)";
+  msgEl.innerText = "";
+  btn.disabled = true;
+  const originalLabel = btn.querySelector("span").innerText;
+  btn.querySelector("span").innerText = t('google_signing_in');
+
+  try {
+    await signInWithPopup(auth, googleProvider);
+    document.getElementById("authModal").style.display = "none";
+    addNotification(t('login_success'), "👋");
+  } catch (e) {
+    console.error("Google sign-in failed:", e.code, e.message);
+    // A user deliberately closing the popup isn't an error worth showing.
+    if (e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") {
+      msgEl.style.color = "var(--coral)";
+      msgEl.innerText = translateAuthError(e.code);
+    }
+    // Fallback for browsers/in-app webviews that block popups (common on
+    // some Android in-app browsers) — redirect flow instead.
+    if (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment") {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (redirectErr) {
+        console.error("Google redirect sign-in failed:", redirectErr.code, redirectErr.message);
+      }
+    }
+  }
+
+  btn.disabled = false;
+  btn.querySelector("span").innerText = originalLabel;
+};
+
+// Catches the result when signInWithRedirect was used as a fallback above
+// (the page reloads after the redirect, so this must run on every load).
+async function checkGoogleRedirectResult() {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      document.getElementById("authModal").style.display = "none";
+      addNotification(t('login_success'), "👋");
+    }
+  } catch (e) {
+    console.warn("Google redirect result check failed:", e.code, e.message);
+  }
+}
 
 window.handleForgotPassword = async function() {
   const emailEl = document.getElementById("authEmail");
@@ -2213,6 +2283,7 @@ function startTrustStatsListener() {
 async function initApp() {
   applyStaticTranslations();
   updateThemeBtn();
+  await checkGoogleRedirectResult();
   initAuthListener();
 }
 
