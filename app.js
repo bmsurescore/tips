@@ -2086,8 +2086,13 @@ function processTodayMatches() {
 
   // Booking codes shown ONCE per section (not per match card) — set by
   // the admin's dedicated Booking Codes panel, not per-match.
+  // SECURITY FIX: the VIP booking-code banner used to render unconditionally
+  // for anyone visiting the VIP tab, even before they'd unlocked VIP — the
+  // matches themselves were hidden behind "Unlock to Reveal" but the actual
+  // booking code sitting above them was fully visible, defeating the paywall.
+  // It now only renders once vipUnlocked is true, same gate as the tips.
   freeDataEl.innerHTML = buildSectionBookingBanner(bookingCodes.free) + renderGroupedByLeague(freeBuilt, false);
-  vipDataEl.innerHTML  = buildSectionBookingBanner(bookingCodes.vip)  + renderGroupedByLeague(vipBuilt, true);
+  vipDataEl.innerHTML  = (vipUnlocked ? buildSectionBookingBanner(bookingCodes.vip) : "") + renderGroupedByLeague(vipBuilt, true);
 
   if (fTotal > 0) {
     freeDataEl.style.display = "";
