@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0A0E15">
+<meta name="theme-color" content="#0A0D13">
 <title>BM SURESCORE — Professional Football Predictions</title>
 <meta name="description" content="Daily free and VIP football predictions with verified results, live win-rate tracking, and full match history. Trusted tips, updated every day.">
 
@@ -28,9 +28,114 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Chat: send-image + delete-message additions (kept inline since
+     styles.css wasn't provided alongside this file — move these rules
+     into styles.css whenever convenient, they don't need to live here). */
+  .chat-attach-btn {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(127,127,127,0.12);
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .chat-attach-btn:hover { background: rgba(127,127,127,0.22); }
+  .chat-attach-btn:active { transform: scale(0.94); }
+  .chat-attach-btn:disabled { opacity: .5; cursor: default; }
+
+  .chat-msg-row { display: flex; align-items: flex-end; gap: 6px; }
+  .chat-msg.user .chat-msg-row { justify-content: flex-end; }
+  .chat-msg.admin .chat-msg-row { justify-content: flex-start; }
+
+  /* Press-and-hold to delete: holding a bubble you sent fills it with a
+     red tint over ~550ms as a "keep holding to delete" cue, then the
+     browser confirm() dialog takes over. Releasing early cancels it. */
+  .chat-bubble-holdable {
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .chat-bubble-holdable::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(239,74,95,0.35);
+    transform: scaleX(0);
+    transform-origin: left;
+    pointer-events: none;
+  }
+  .chat-bubble-holdable.holding::after {
+    transform: scaleX(1);
+    transition: transform 550ms linear;
+  }
+  .chat-bubble-holdable.holding {
+    filter: brightness(0.96);
+  }
+
+  .chat-bubble-image { padding: 6px; }
+  .chat-bubble-image img {
+    display: block;
+    max-width: 200px;
+    max-height: 240px;
+    border-radius: 10px;
+    cursor: zoom-in;
+    object-fit: cover;
+  }
+  .chat-image-caption { padding: 4px 6px 2px; font-size: 13px; }
+
+  /* Custom confirm modal (replaces the native browser confirm() popup,
+     which can't be styled and looks out of place on a dark theme). */
+  .confirm-modal-box { max-width: 320px; text-align: center; }
+  .confirm-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .confirm-btn {
+    flex: 1;
+    padding: 11px 0;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .1s ease, filter .15s ease;
+  }
+  .confirm-btn:active { transform: scale(0.97); }
+  .confirm-btn-cancel {
+    background: rgba(127,127,127,0.16);
+    color: var(--text, #e7ebf3);
+  }
+  .confirm-btn-cancel:hover { filter: brightness(1.15); }
+  .confirm-btn-danger {
+    background: #ef4a5f;
+    color: #fff;
+  }
+  .confirm-btn-danger:hover { filter: brightness(1.08); }
+
+  /* WhatsApp-style delivery ticks on the user's own outgoing messages:
+     grey ✓✓ = delivered, blue ✓✓ = admin has read the chat. */
+  .chat-msg-ticks {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 11px;
+    letter-spacing: -2px;
+    color: #8a93a6;
+  }
+  .chat-msg-ticks.read { color: #34B7F1; }
+</style>
 <script>
-  /* Apply the saved theme (or system preference) before first paint,
-     so there is no flash of the wrong theme on load. */
   (function() {
     try {
       var saved = localStorage.getItem("appTheme");
@@ -46,7 +151,7 @@
 
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark">B</div>
+    <div class="brand-mark"><span>B</span></div>
     <div class="brand-text">
       <h1 class="disp">BM SURESCORE</h1>
       <p data-i18n="brand_tagline">Professional Football Predictions</p>
@@ -60,6 +165,9 @@
   <div class="topbar-right">
     <div class="icon-btn theme-btn" onclick="toggleTheme()" id="themeBtn" title="Theme">🌙</div>
     <div class="icon-btn lang-btn" onclick="toggleLanguage()" id="langBtn" title="Language / Lugha">SW</div>
+    <div class="icon-btn" onclick="openChatModal()" id="chatBtn" title="Chat">
+      💬<div class="chat-dot hidden" id="chatUnreadDot"></div>
+    </div>
     <div class="icon-btn" onclick="toggleAccountPanel()" id="accountBtn" title="Akaunti">👤</div>
     <div class="icon-btn" onclick="toggleNotifPanel()" id="notifBell">
       🔔<div class="notif-count hidden" id="notifCount">0</div>
@@ -84,7 +192,7 @@
 
 <div id="popup" class="popup">
   <div class="popup-box">
-    <div style="font-size:26px;margin-bottom:12px;">💬</div>
+    <div class="popup-icon">💬</div>
     <p id="popupMsg"></p>
     <button onclick="closePopup()">OK</button>
   </div>
@@ -134,11 +242,44 @@
 </div>
 
 <div id="blockedScreen" class="popup" style="z-index:20000;">
-  <div class="popup-box" style="border-color:rgba(235,91,95,.4);">
-    <div style="font-size:40px;margin-bottom:14px;">🚫</div>
-    <h2 style="color:var(--coral);font-size:18px;font-weight:800;margin-bottom:10px;font-family:'Space Grotesk',sans-serif;" data-i18n="blocked_title">Access Blocked</h2>
+  <div class="popup-box popup-box-danger">
+    <div class="popup-icon">🚫</div>
+    <h2 class="popup-danger-title" data-i18n="blocked_title">Access Blocked</h2>
     <p data-i18n="blocked_msg">Your account has been blocked from accessing BM SURESCORE. If you think this is a mistake, contact us on WhatsApp.</p>
     <button onclick="goWhatsAppBlocked()" data-i18n="blocked_btn">💬 Contact WhatsApp</button>
+  </div>
+</div>
+
+<div id="chatModal" class="popup" onclick="if(event.target===this)closeChatModal()">
+  <div class="popup-box chat-box" onclick="event.stopPropagation()">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <span class="chat-header-icon">💬</span>
+        <div>
+          <div class="chat-header-title" data-i18n="chat_modal_title">Chat with Admin</div>
+          <div class="chat-header-sub" data-i18n="chat_modal_sub">We usually reply quickly</div>
+        </div>
+      </div>
+      <button class="chat-close-btn" onclick="closeChatModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="chat-messages" id="chatMessagesList"></div>
+    <div class="chat-input-row">
+      <input type="file" id="chatImageInput" accept="image/*" class="hidden" onchange="handleChatImageSelected(this)">
+      <button type="button" id="chatAttachBtn" class="chat-attach-btn" onclick="pickChatImage()" data-i18n-title="chat_attach_image" title="Send image" aria-label="Send image">📎</button>
+      <input type="text" id="chatInput" data-i18n-placeholder="chat_placeholder" placeholder="Type your message…" autocomplete="off" maxlength="600" onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button id="chatSendBtn" class="chat-send-btn" onclick="sendChatMessage()" aria-label="Send">➤</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmModal" class="popup" style="z-index:20000;" onclick="if(event.target===this)resolveConfirmModal(false)">
+  <div class="popup-box confirm-modal-box" onclick="event.stopPropagation()">
+    <div class="popup-icon" id="confirmModalIcon">🗑</div>
+    <p id="confirmModalMsg"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="confirm-btn confirm-btn-cancel" onclick="resolveConfirmModal(false)" data-i18n="confirm_cancel_btn">Cancel</button>
+      <button type="button" class="confirm-btn confirm-btn-danger" onclick="resolveConfirmModal(true)" data-i18n="confirm_delete_btn">Delete</button>
+    </div>
   </div>
 </div>
 
@@ -149,7 +290,7 @@
     <div class="streak-bar" id="freeStreakBar" style="display:none;">
       <div class="streak-emoji">🔥</div>
       <div class="streak-text"><strong data-i18n="streak_free_title">Today's Win Streak</strong><small id="freeStreakSub">Consecutive wins today</small></div>
-      <div class="streak-num" id="freeStreakNum">0</div>
+      <div class="streak-num led" id="freeStreakNum">0</div>
     </div>
 
     <div class="panel">
@@ -168,10 +309,10 @@
       </div>
       <div id="summaryFree" class="summary-box" style="display:none;">
         <div class="summary-stats">
-          <div class="stat-cell wins"><span class="val" id="sWinF">0</span><span class="lbl" data-i18n="stat_wins">Wins</span></div>
-          <div class="stat-cell lost"><span class="val" id="sLostF">0</span><span class="lbl" data-i18n="stat_lost">Lost</span></div>
-          <div class="stat-cell rate"><span class="val" id="sRateF">0%</span><span class="lbl" data-i18n="stat_rate">Win rate</span></div>
-          <div class="stat-cell odds"><span class="val" id="sOddsF">0.00</span><span class="lbl" data-i18n="stat_odds">Total odds</span></div>
+          <div class="stat-cell wins"><span class="val led" id="sWinF">0</span><span class="lbl" data-i18n="stat_wins">Wins</span></div>
+          <div class="stat-cell lost"><span class="val led" id="sLostF">0</span><span class="lbl" data-i18n="stat_lost">Lost</span></div>
+          <div class="stat-cell rate"><span class="val led" id="sRateF">0%</span><span class="lbl" data-i18n="stat_rate">Win rate</span></div>
+          <div class="stat-cell odds"><span class="val led" id="sOddsF">0.00</span><span class="lbl" data-i18n="stat_odds">Total odds</span></div>
         </div>
         <div class="progress-wrap">
           <div class="progress-label"><span data-i18n="progress_label">Win rate tracker</span><span id="sProgLabelF">0 / 0</span></div>
@@ -194,7 +335,7 @@
     <div class="streak-bar gold" id="vipStreakBar" style="display:none;">
       <div class="streak-emoji">🏆</div>
       <div class="streak-text"><strong data-i18n="streak_vip_title">VIP Win Streak</strong><small id="vipStreakSub">Consecutive wins today</small></div>
-      <div class="streak-num" id="vipStreakNum">0</div>
+      <div class="streak-num led gold" id="vipStreakNum">0</div>
     </div>
 
     <div class="vip-cta-banner" id="vipCtaBanner" onclick="scrollToVipAuth()" style="display:none;">
@@ -224,10 +365,10 @@
       </div>
       <div id="summaryVip" class="summary-box" style="display:none;">
         <div class="summary-stats">
-          <div class="stat-cell wins"><span class="val" id="sWinV">0</span><span class="lbl" data-i18n="stat_wins">Wins</span></div>
-          <div class="stat-cell lost"><span class="val" id="sLostV">0</span><span class="lbl" data-i18n="stat_lost">Lost</span></div>
-          <div class="stat-cell rate"><span class="val" id="sRateV">0%</span><span class="lbl" data-i18n="stat_rate">Win rate</span></div>
-          <div class="stat-cell odds"><span class="val" id="sOddsV">0.00</span><span class="lbl" data-i18n="stat_odds">Total odds</span></div>
+          <div class="stat-cell wins"><span class="val led" id="sWinV">0</span><span class="lbl" data-i18n="stat_wins">Wins</span></div>
+          <div class="stat-cell lost"><span class="val led" id="sLostV">0</span><span class="lbl" data-i18n="stat_lost">Lost</span></div>
+          <div class="stat-cell rate"><span class="val led" id="sRateV">0%</span><span class="lbl" data-i18n="stat_rate">Win rate</span></div>
+          <div class="stat-cell odds"><span class="val led" id="sOddsV">0.00</span><span class="lbl" data-i18n="stat_odds">Total odds</span></div>
         </div>
         <div class="progress-wrap">
           <div class="progress-label"><span data-i18n="progress_label">Win rate tracker</span><span id="sProgLabelV">0 / 0</span></div>
@@ -264,9 +405,9 @@
         </div>
         <button id="authBtn" data-i18n="btn_unlock_vip" onclick="unlockVipCode()">Unlock VIP</button>
         <div id="codeMsg" style="min-height:18px;font-size:12px;margin-top:12px;letter-spacing:.03em;"></div>
-        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line-soft);">
-          <p style="font-size:11px;opacity:.4;margin-bottom:12px;" data-i18n="no_code_msg">Don't have a VIP code?</p>
-          <button class="whatsapp-btn" style="margin:0 auto;" onclick="goWhatsApp()" data-i18n="whatsapp_btn">💬 Pay / Get VIP code — WhatsApp</button>
+        <div class="vip-box-footer">
+          <p data-i18n="no_code_msg">Don't have a VIP code?</p>
+          <button class="chat-cta-btn" style="margin:0 auto;" onclick="openChatForVipRequest()" data-i18n="chat_cta_btn">💬 Chat with Admin — Get VIP Code</button>
         </div>
       </div>
     </div>
