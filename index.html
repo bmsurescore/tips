@@ -39,6 +39,20 @@
     }
   })();
 </script>
+
+<!-- OneSignal Web Push -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "d315709b-1d35-46f9-8be7-9f4d5c01a4c4",
+      serviceWorkerPath: "onesignal/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/tips/onesignal/" },
+      notifyButton: { enable: true }
+    });
+  });
+</script>
 </head>
 <body>
 
