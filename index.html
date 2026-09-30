@@ -1,162 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>I Love You AGNESS</title>
-<style>
-*{box-sizing:border-box}
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#000;
-}
-body{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-family:Arial,sans-serif;
-}
-#heart{
-  width:min(92vw,620px);
-  height:auto;
-  overflow:visible;
-}
-.word{
-  fill:#f39bc8;
-  font-size:13px;
-  font-weight:700;
-  letter-spacing:.2px;
-  opacity:.9;
-  filter:url(#glow);
-}
-.word.bright{opacity:1}
-#heartShape{
-  fill:none;
-  stroke:#f39bc8;
-  stroke-width:2;
-  opacity:.08;
-}
-@keyframes pulse{
-  0%,100%{transform:scale(1)}
-  12%{transform:scale(1.055)}
-  25%{transform:scale(1)}
-  42%{transform:scale(1.035)}
-  55%{transform:scale(1)}
-}
-#heartGroup{
-  transform-origin:300px 270px;
-  animation:pulse 1.5s ease-in-out infinite;
-}
-</style>
-</head>
-<body>
-  <p>I LOVE YOU AGNESS💋</p>
-
-<svg id="heart" viewBox="0 0 600 540">
-  <defs>
-    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur stdDeviation="2.2" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-
-    <!-- Heart outline used as the mathematical path for the words -->
-    <path id="heartPath"
-      d="M300 485
-         C270 455 105 345 105 205
-         C105 115 170 65 235 65
-         C270 65 292 83 300 110
-         C308 83 330 65 365 65
-         C430 65 495 115 495 205
-         C495 345 330 455 300 485 Z"/>
-  </defs>
-
-  <g id="heartGroup">
-    <use href="#heartPath" id="heartShape"/>
-    <g id="words"></g>
-  </g>
-</svg>
-
-<script>
-/*
-  JAVASCRIPT LOGIC
-  1. Find the heart path.
-  2. Read many positions along that path.
-  3. Create "I love you" text at each position.
-  4. Rotate each word to follow the heart curve.
-  5. Animate the words continuously.
-*/
-
-const path = document.getElementById("heartPath");
-const words = document.getElementById("words");
-
-const totalItems = 105;
-const gap = path.getTotalLength() / totalItems;
-
-let items = [];
-
-for (let i = 0; i < totalItems; i++) {
-  const text = document.createElementNS(
-    "http://www.w3.org/2000/svg", "text"
-  );
-
-  text.textContent = "I love you";
-  text.setAttribute("class", "word");
-
-  // Each word gets a different position on the heart.
-  const distance = i * gap;
-
-  text.dataset.distance = distance;
-  words.appendChild(text);
-  items.push(text);
-}
-
-// Put every word on the heart and rotate it along the curve.
-function drawWords(offset = 0) {
-  const length = path.getTotalLength();
-
-  items.forEach((text, i) => {
-    let d = (Number(text.dataset.distance) + offset) % length;
-
-    const p = path.getPointAtLength(d);
-    const p2 = path.getPointAtLength((d + 1) % length);
-
-    // Direction of the curve
-    const angle =
-      Math.atan2(p2.y - p.y, p2.x - p.x) * 180 / Math.PI;
-
-    text.setAttribute(
-      "transform",
-      `translate(${p.x} ${p.y}) rotate(${angle})`
-    );
-
-    // A few words glow brighter, similar to the screenshot.
-    if ((i + Math.floor(offset / 3)) % 9 === 0) {
-      text.classList.add("bright");
-    } else {
-      text.classList.remove("bright");
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>BM SURESCORE | Maintenance</title>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-  });
-}
+    
+    body {
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, #12345a 0%, transparent 35%),
+        radial-gradient(circle at bottom right, #24105a 0%, transparent 35%),
+        #050914;
+      color: #fff;
+      overflow: hidden;
+    }
+    
+    /* Background glow */
+    body::before,
+    body::after {
+      content: "";
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.18;
+      pointer-events: none;
+    }
+    
+    body::before {
+      background: #00aaff;
+      top: -150px;
+      left: -150px;
+    }
+    
+    body::after {
+      background: #7b2cff;
+      bottom: -150px;
+      right: -150px;
+    }
+    
+    .container {
+      position: relative;
+      z-index: 2;
+      width: 92%;
+      max-width: 620px;
+      padding: 50px 30px;
+      text-align: center;
+      
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      
+      box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.45);
+    }
+    
+    /* Logo */
+    .logo {
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 35px;
+    }
+    
+    .logo span {
+      color: #00b7ff;
+    }
+    
+    /* Gear */
+    .gear {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 28px;
+      
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      border-radius: 50%;
+      background: rgba(0, 183, 255, 0.08);
+      border: 1px solid rgba(0, 183, 255, 0.25);
+      
+      font-size: 48px;
+      
+      animation: spin 7s linear infinite;
+    }
+    
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    h1 {
+      font-size: 38px;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+    
+    h1 span {
+      color: #00b7ff;
+    }
+    
+    .message {
+      max-width: 470px;
+      margin: auto;
+      color: #aeb8cc;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+    
+    /* Status */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      
+      margin-top: 28px;
+      padding: 9px 17px;
+      
+      border-radius: 50px;
+      background: rgba(255, 193, 7, 0.08);
+      border: 1px solid rgba(255, 193, 7, 0.18);
+      
+      color: #ffd15c;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: #ffc107;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #ffc107;
+      
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      
+      50% {
+        opacity: 0.35;
+        transform: scale(0.7);
+      }
+      
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Divider */
+    .divider {
+      width: 70px;
+      height: 3px;
+      margin: 30px auto;
+      border-radius: 10px;
+      
+      background: linear-gradient(90deg,
+          #00b7ff,
+          #7b2cff);
+    }
+    
+    .notice {
+      color: #7f8ba3;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .footer {
+      margin-top: 35px;
+      color: #566178;
+      font-size: 12px;
+    }
+    
+    /* Mobile */
+    @media (max-width: 500px) {
+      
+      .container {
+        padding: 42px 22px;
+        border-radius: 23px;
+      }
+      
+      h1 {
+        font-size: 30px;
+      }
+      
+      .gear {
+        width: 78px;
+        height: 78px;
+        font-size: 40px;
+      }
+      
+      .message {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
 
-let offset = 0;
-
-function animate() {
-  offset += 0.45;
-  drawWords(offset);
-  requestAnimationFrame(animate);
-}
-
-drawWords();
-animate();
-</script>
-
+<body>
+  
+  <main class="container">
+    
+    <div class="logo">
+      BM SURESCORE <span>APP</span>
+    </div>
+    
+    <div class="gear">
+      ⚙️
+    </div>
+    
+    <h1>
+      We'll Be <span>Back Soon</span>
+    </h1>
+    
+    <p class="message">
+      Our website is currently undergoing maintenance
+      and improvements. We're working to make your
+      experience faster, better and more reliable.
+    </p>
+    
+    <div class="status">
+      <span class="dot"></span>
+      Website Under Maintenance
+    </div>
+    
+    <div class="divider"></div>
+    
+    <p class="notice">
+      Please check back shortly.
+      Thank you for your patience and support.
+    </p>
+    
+    <div class="footer">
+      © 2026 BM SURESCORE. All rights reserved.
+    </div>
+    
+  </main>
+  
 </body>
-</html>
 
+</html>
